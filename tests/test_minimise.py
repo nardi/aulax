@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import numpy as np
 import optimistix as optx
 import pytest
-from problems import PROBLEMS, KnownProblem, hs28, hs35
+from problems import PROBLEMS, BenchmarkProblem, hs28, hs35
 
 import aulax as alx
 
@@ -12,7 +12,9 @@ SOLVER = alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-10, atol=1e-10))
 
 
 @pytest.mark.parametrize("test_problem", PROBLEMS, ids=lambda problem: problem.name)
-def test_hock_schittkowski(test_problem: KnownProblem):
+def test_hock_schittkowski(test_problem: BenchmarkProblem):
+    assert test_problem.solution is not None
+    assert test_problem.objective is not None
     solution = alx.minimise(test_problem.problem, SOLVER, jnp.asarray(test_problem.y0))
     np.testing.assert_allclose(solution.value, test_problem.solution, atol=1e-5)
     objective = test_problem.problem(solution.value, None, None).objective

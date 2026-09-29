@@ -50,12 +50,16 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 # Test functions are named after what they check, so docstrings add little.
 "tests/**" = ["D"]
+# Test problems are named after their number in a collection, which the module
+# docstring cites, so a docstring per function would only repeat the name.
+"benchmarks/problems/**" = ["D103"]
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
 testpaths = ["tests", "docs"]
-# Tests import the shared test problems from `tests/problems.py`.
-pythonpath = ["tests"]
+# Tests import the shared test problems from `tests/problems.py`, which takes
+# them from the benchmark suite at the repository root.
+pythonpath = [".", "tests"]
 
 [tool.ruff.lint.isort]
 # Two blank lines after the imports, matching equinox, lineax and optimistix.
@@ -64,5 +68,5 @@ lines-after-imports = 2
 combine-as-imports = true
 
 [tool.ty.environment]
-# The benchmarks import the shared test problems from `tests/problems.py`.
-extra-paths = ["tests"]
+# The tests import `tests/problems.py` and the `benchmarks` package at the root.
+extra-paths = [".", "tests"]
