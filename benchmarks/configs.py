@@ -15,6 +15,7 @@ from jaxtyping import PyTree
 
 import aulax as alx
 
+from .ipopt import import_cyipopt
 from .metrics import classify_outcome, constraint_violation, flat_leaves
 from .problems import BenchmarkProblem
 from .records import SolveRecord
@@ -72,6 +73,20 @@ def _error_record(problem: BenchmarkProblem, error: Exception) -> SolveRecord:
         inequality_constraints=inequality,
         outcome="error",
         message=f"{type(error).__name__}: {error}",
+        known_objective=problem.objective,
+    )
+
+
+def _skipped_record(problem: BenchmarkProblem, reason: str) -> SolveRecord:
+    """Return the record of a problem the configuration does not attempt."""
+    variables, equality, inequality = _problem_sizes(problem)
+    return SolveRecord(
+        problem=problem.name,
+        variables=variables,
+        equality_constraints=equality,
+        inequality_constraints=inequality,
+        outcome="skipped",
+        message=reason,
         known_objective=problem.objective,
     )
 
@@ -194,7 +209,13 @@ class _CachedDerivatives:
                 _flat(evaluation.inequality),
             )
 
+        def flat_lagrangian(flat_y, objective_factor, multipliers):
+            objective, equality, inequality = flat_values(flat_y)
+            residuals = jnp.concatenate([equality, inequality])
+            return objective_factor * objective + multipliers @ residuals
+
         self._values = jax.jit(flat_values)
+        self._lagrangian_hessian = jax.jit(jax.hessian(flat_lagrangian))
         self._derivatives = jax.jit(
             lambda y: (flat_values(y), jax.jacfwd(flat_values)(y))
         )
@@ -206,6 +227,8 @@ class _CachedDerivatives:
         """The number of problem evaluations, with or without derivatives."""
         self.derivative_evaluations = 0
         """How many of the evaluations also computed derivatives."""
+        self.hessian_evaluations = 0
+        """The number of Hessians of the Lagrangian, which IPOPT asks for."""
 
     def values(self, x: np.ndarray):
         """Return the objective, equality and inequality residuals at `x`."""
@@ -228,6 +251,15 @@ class _CachedDerivatives:
             self.derivative_evaluations += 1
         return self._derivative_cache[1]
 
+    def lagrangian_hessian(
+        self, x: np.ndarray, objective_factor: float, multipliers: np.ndarray
+    ) -> np.ndarray:
+        """Return the Hessian of the weighted Lagrangian at `x`."""
+        self.hessian_evaluations += 1
+        return np.asarray(
+            self._lagrangian_hessian(x, objective_factor, np.asarray(multipliers))
+        )
+
 
 def _flat(tree) -> jax.Array:
     """Return the leaves of `tree` as one flat array, empty if there are none."""
@@ -249,9 +281,13 @@ class ScipyConfiguration:
     """The `tol` argument of `scipy.optimize.minimize`."""
     max_iterations: int = 5000
     """The iteration limit of the method."""
+    max_variables: int = 200
+    """The largest problem to attempt, since the methods work with dense matrices."""
 
     def solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
         """Solve `problem` and count the distinct evaluations SciPy asked for."""
+        if flat_leaves(problem.y0).size > self.max_variables:
+            return _skipped_record(problem, "Too many variables for this method.")
         try:
             return self._solve(problem, repeats)
         except Exception as error:
@@ -322,6 +358,119 @@ class ScipyConfiguration:
         )
 
 
+@dataclass(frozen=True)
+class IpoptConfiguration:
+    """IPOPT through cyipopt, with exact Hessians of the Lagrangian from JAX.
+
+    IPOPT receives the equality and inequality residuals as general constraints,
+    including the ones that are bounds on variables, so that it solves the same
+    formulation as aulax.
+    """
+
+    name: str
+    """The name the scripts and result files use."""
+    description: str
+    """One sentence on what the configuration changes."""
+    tolerance: float = 1e-8
+    """The `tol` option of IPOPT."""
+    max_iterations: int = 3000
+    """The `max_iter` option of IPOPT."""
+
+    def solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
+        """Solve `problem` and count the distinct evaluations IPOPT asked for."""
+        try:
+            return self._solve(problem, repeats)
+        except Exception as error:
+            return _error_record(problem, error)
+
+    def _run(self, problem: BenchmarkProblem, cache: _CachedDerivatives):
+        """Run IPOPT once with the evaluations from `cache`."""
+        cyipopt = import_cyipopt()
+        _, equality, inequality = cache.values(cache.flat_y0)
+        size = cache.flat_y0.size
+        constraint_count = equality.size + inequality.size
+        lower_triangle = np.tril_indices(size)
+
+        class Callbacks:
+            def objective(self, x):
+                return float(cache.values(x)[0])
+
+            def gradient(self, x):
+                return cache.derivatives(x)[0]
+
+            def constraints(self, x):
+                values = cache.values(x)
+                return np.concatenate([values[1], values[2]])
+
+            def jacobianstructure(self):
+                return np.nonzero(np.ones((constraint_count, size)))
+
+            def jacobian(self, x):
+                jacobians = cache.derivatives(x)
+                return np.concatenate([jacobians[1], jacobians[2]]).ravel()
+
+            def hessianstructure(self):
+                return lower_triangle
+
+            def hessian(self, x, multipliers, objective_factor):
+                hessian = cache.lagrangian_hessian(x, objective_factor, multipliers)
+                return hessian[lower_triangle]
+
+        lower = np.concatenate(
+            [np.zeros(equality.size), np.full(inequality.size, -1e20)]
+        )
+        nlp = cyipopt.Problem(
+            n=size,
+            m=constraint_count,
+            problem_obj=Callbacks(),
+            cl=lower,
+            cu=np.zeros(constraint_count),
+        )
+        nlp.add_option("print_level", 0)
+        nlp.add_option("sb", "yes")
+        nlp.add_option("tol", self.tolerance)
+        nlp.add_option("max_iter", self.max_iterations)
+        return nlp.solve(cache.flat_y0)
+
+    def _solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
+        """Solve `problem`, letting exceptions through."""
+        cache = _CachedDerivatives(problem)
+        start = time.perf_counter()
+        x, info = self._run(problem, cache)
+        compile_seconds = time.perf_counter() - start
+        seconds = _best_time(
+            lambda: self._run(problem, _CachedDerivatives(problem)), repeats
+        )
+        value = cache.unravel(jnp.asarray(x))
+        evaluation = problem.problem(value, problem.args, None)
+        objective = float(evaluation.objective)
+        infeasibility = constraint_violation(evaluation)
+        variables, equality, inequality = _problem_sizes(problem)
+        # Status 0 means solved, and 1 means solved to the acceptable level.
+        converged = info["status"] in (0, 1)
+        message = info["status_msg"]
+        if isinstance(message, bytes):
+            message = message.decode()
+        return SolveRecord(
+            problem=problem.name,
+            variables=variables,
+            equality_constraints=equality,
+            inequality_constraints=inequality,
+            outcome=classify_outcome(
+                converged, infeasibility, objective, problem.objective
+            ),
+            message=f"{message} ({cache.hessian_evaluations} Hessians)",
+            evaluations=cache.evaluations,
+            derivative_evaluations=cache.derivative_evaluations,
+            objective=objective,
+            known_objective=problem.objective,
+            solution_error=_solution_error(problem, value),
+            infeasibility=infeasibility,
+            seconds=seconds,
+            compile_seconds=compile_seconds,
+        )
+
+
 _CONFIGURATION_LIST: list[Configuration] = [
     AulaxConfiguration(
         name="baseline",
@@ -332,6 +481,10 @@ _CONFIGURATION_LIST: list[Configuration] = [
         name="scipy_slsqp",
         description="SciPy's SLSQP.",
         method="SLSQP",
+    ),
+    IpoptConfiguration(
+        name="ipopt",
+        description="IPOPT with exact Hessians of the Lagrangian.",
     ),
     ScipyConfiguration(
         name="scipy_trust_constr",

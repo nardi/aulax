@@ -46,6 +46,8 @@ def summary_table(result_files: list[ResultFile]) -> list[str]:
         evaluation_ratios = []
         time_ratios = []
         for record in result_file.records:
+            if record.outcome == "skipped":
+                continue
             if is_success(record):
                 counts["solved"] += 1
             elif record.outcome == "other_minimum":

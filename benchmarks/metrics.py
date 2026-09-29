@@ -22,7 +22,14 @@ OBJECTIVE_ABSOLUTE_TOLERANCE = 1e-8
 """The absolute difference from the known objective that still counts as equal,
 for known objectives near zero."""
 
-OUTCOMES = ("solved", "below_reference", "other_minimum", "failed", "error")
+OUTCOMES = (
+    "solved",
+    "below_reference",
+    "other_minimum",
+    "failed",
+    "error",
+    "skipped",
+)
 """The possible outcomes of a solve.
 
 - `"solved"`: the solver converged to a feasible point whose objective matches
@@ -33,6 +40,7 @@ OUTCOMES = ("solved", "below_reference", "other_minimum", "failed", "error")
   point where the solver converged, so probably a different local minimum.
 - `"failed"`: the solver did not converge, or returned an infeasible point.
 - `"error"`: the solve raised an exception.
+- `"skipped"`: the configuration does not attempt problems of this size.
 """
 
 

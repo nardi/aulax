@@ -15,3 +15,5 @@ wheels/
 site/
 # S2MPJ problem files, downloaded by `benchmarks/s2mpj/fetch.py`.
 benchmarks/s2mpj/.cache/
+# Ipopt binaries for Windows, downloaded by `benchmarks/ipopt.py`.
+benchmarks/.ipopt/

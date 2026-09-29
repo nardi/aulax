@@ -26,7 +26,12 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = ["pytest>=9.1.1", "ruff>=0.16.9", "ty>=0.0.84", { include-group = "docs" }]
 docs = ["markdown-pytest>=0.6.6", "mkdocstrings-python>=2.0.9", "zensical>=0.0.66"]
-bench = ["scipy>=1.17.1"]
+bench = [
+    "scipy>=1.17.1",
+]
+ipopt = [
+    "cyipopt>=1.7.0",
+]
 
 [tool.ruff]
 target-version = "py311"
