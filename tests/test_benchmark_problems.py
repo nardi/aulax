@@ -34,11 +34,12 @@ def test_known_solution_matches_known_objective(problem: BenchmarkProblem):
         pytest.skip("The problem has no known solution.")
     evaluation = problem.problem(jnp.asarray(problem.solution), problem.args, None)
     # Published solutions are rounded to about seven digits, so both checks use
-    # a tolerance that allows for that.
+    # a tolerance that allows for that. Constraints with coefficients of 1000, as
+    # in HS74, turn that rounding into violations of a few times 1e-4.
     np.testing.assert_allclose(
         evaluation.objective, problem.objective, rtol=1e-5, atol=1e-6
     )
-    assert constraint_violation(evaluation) < 1e-5
+    assert constraint_violation(evaluation) < 1e-3
 
 
 def test_outcome_classification():
