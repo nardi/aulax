@@ -13,3 +13,5 @@ wheels/
 
 # Docs site
 site/
+# S2MPJ problem files, downloaded by `benchmarks/s2mpj/fetch.py`.
+benchmarks/s2mpj/.cache/
