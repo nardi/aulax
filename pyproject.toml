@@ -1,0 +1,58 @@
+[project]
+name = "aulax"
+version = "0.0.1"
+description = "Constrained nonlinear optimization in JAX with the augmented Lagrangian method"
+readme = "README.md"
+authors = [{ name = "Nardi Lam", email = "mail@nardilam.nl" }]
+license = "LicenseRef-Hippocratic-3.0"
+license-files = ["LICENSE.md"]
+requires-python = ">=3.11"
+dependencies = [
+    "equinox>=0.13.8",
+    "jax>=0.10.2",
+    "jaxtyping>=0.3.11",
+    "lineax>=0.1.1",
+    "optimistix>=0.1.0",
+]
+
+[project.urls]
+Documentation = "https://nardi.github.io/aulax"
+Repository = "https://github.com/nardi/aulax"
+
+[build-system]
+requires = ["uv_build>=0.11.7,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=9.1.1", "ruff>=0.16.9", "ty>=0.0.84", { include-group = "docs" }]
+docs = ["markdown-pytest>=0.6.6", "mkdocstrings-python>=2.0.9", "zensical>=0.0.66"]
+bench = ["scipy>=1.17.1"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "D"]
+ignore = [
+    # jaxtyping shape strings such as " n" start with a space on purpose, and
+    # ruff reads them as forward references that fail to parse.
+    "F722",
+    # Private modules and test files do not need module or package docstrings.
+    "D100",
+    "D104",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Test functions are named after what they check, so docstrings add little.
+"tests/**" = ["D"]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+testpaths = ["tests", "docs"]
+
+[tool.ruff.lint.isort]
+# Two blank lines after the imports, matching equinox, lineax and optimistix.
+lines-after-imports = 2
