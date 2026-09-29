@@ -22,7 +22,9 @@ ALL_PROBLEMS = [
 
 @pytest.mark.parametrize("problem", ALL_PROBLEMS)
 def test_problem_evaluates_to_finite_values(problem: BenchmarkProblem):
-    evaluation = problem.problem(jnp.asarray(problem.y0), problem.args, None)
+    evaluation = problem.problem(
+        jax.tree.map(jnp.asarray, problem.y0), problem.args, None
+    )
     assert jnp.shape(evaluation.objective) == ()
     for leaf in jax.tree.leaves(evaluation):
         assert jnp.all(jnp.isfinite(leaf))
@@ -32,7 +34,9 @@ def test_problem_evaluates_to_finite_values(problem: BenchmarkProblem):
 def test_known_solution_matches_known_objective(problem: BenchmarkProblem):
     if problem.solution is None or problem.objective is None:
         pytest.skip("The problem has no known solution.")
-    evaluation = problem.problem(jnp.asarray(problem.solution), problem.args, None)
+    evaluation = problem.problem(
+        jax.tree.map(jnp.asarray, problem.solution), problem.args, None
+    )
     # Published solutions are rounded to about seven digits, so both checks use
     # a tolerance that allows for that. Constraints with coefficients of 1000, as
     # in HS74, turn that rounding into violations of a few times 1e-4.

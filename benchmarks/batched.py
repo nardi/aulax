@@ -1,72 +1,144 @@
 """Time batches of small problems solved under `jax.vmap`.
 
-Run with `uv run --group bench python benchmarks/batched.py`. Each problem is
-HS71 with its equality constraint moved to a different right-hand side, so the
-problems in a batch have different solutions and take different numbers of steps.
+Example: `python -m benchmarks.batched --config baseline`. The problems in a
+batch differ in their `args`, so they have different solutions and take
+different numbers of steps. The batch runs until its slowest member finishes.
 """
 
+import argparse
+import dataclasses
+import datetime
+import json
 import time
+from dataclasses import dataclass
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
 import numpy as np
-import optimistix as optx
 
 import aulax as alx
 
-
-jax.config.update("jax_enable_x64", True)
-
-SOLVER = alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-10, atol=1e-10))
-BATCH_SIZES = [1, 10, 100, 1000]
-
-
-def shifted_hs71(y, args, state):
-    """HS71 with the sum of squares constrained to `args` instead of 40."""
-    return alx.Evaluation(
-        objective=y[0] * y[3] * (y[0] + y[1] + y[2]) + y[2],
-        equality=jnp.sum(y**2) - args,
-        inequality=jnp.concatenate([jnp.array([25.0 - jnp.prod(y)]), 1.0 - y, y - 5.0]),
-    )
+from .configs import CONFIGURATIONS, AulaxConfiguration
+from .metrics import FEASIBILITY_TOLERANCE
+from .problems.batched import FAMILIES, BatchedFamily
+from .records import RESULTS_DIRECTORY, current_commit, package_versions
 
 
-@jax.jit
-def solve_batch(targets):
-    """Solve one problem per target under `jax.vmap`."""
-    y0 = jnp.array([1.0, 5.0, 5.0, 1.0])
-    return jax.vmap(
-        lambda target: alx.minimise(shifted_hs71, SOLVER, y0, target, throw=False)
-    )(targets)
+BATCH_SIZES = (1, 10, 100, 1000)
+"""The batch sizes each family runs at."""
 
 
-def seconds_for(targets) -> float:
-    """Return the fastest of three timed runs, after one compiling run."""
-    jax.block_until_ready(solve_batch(targets))
+@dataclass
+class BatchRecord:
+    """The cost of solving one batch of one family."""
+
+    family: str
+    """The name of the problem family."""
+    batch_size: int
+    """The number of problems in the batch."""
+    solved: int
+    """How many problems converged to a feasible point."""
+    seconds: float
+    """The fastest time of the timed runs of the whole batch."""
+    compile_seconds: float
+    """The time of the first run, which includes compilation."""
+    minimum_steps: int
+    """The fewest loop iterations any problem in the batch needed."""
+    median_steps: float
+    """The median loop iterations over the batch."""
+    maximum_steps: int
+    """The most loop iterations any problem in the batch needed."""
+
+
+def run_family(
+    family: BatchedFamily,
+    configuration: AulaxConfiguration,
+    batch_size: int,
+    repeats: int,
+    seed: int = 0,
+) -> BatchRecord:
+    """Solve one batch of `family` under `jax.vmap` and return its record."""
+    args = jnp.asarray(family.sample_args(np.random.default_rng(seed), batch_size))
+    y0 = jax.tree.map(jnp.asarray, family.y0)
+
+    @jax.jit
+    def solve_batch(batch_args):
+        return jax.vmap(
+            lambda member_args: alx.minimise(
+                family.problem,
+                configuration.solver,
+                y0,
+                member_args,
+                max_steps=configuration.max_steps,
+                throw=False,
+            )
+        )(batch_args)
+
+    start = time.perf_counter()
+    solutions = jax.block_until_ready(solve_batch(args))
+    compile_seconds = time.perf_counter() - start
     times = []
-    for _ in range(3):
+    for _ in range(repeats):
         start = time.perf_counter()
-        jax.block_until_ready(solve_batch(targets))
+        jax.block_until_ready(solve_batch(args))
         times.append(time.perf_counter() - start)
-    return min(times)
 
-
-def main():
-    """Print the time per batch and per problem for several batch sizes."""
-    print(f"device: {jax.devices()[0].device_kind}")
-    print(
-        f"{'batch':>6} {'ms':>9} {'ms/problem':>11} {'max steps':>10} {'min steps':>10}"
+    steps = np.asarray(solutions.stats.num_steps)
+    converged = np.asarray(solutions.result == alx.RESULTS.successful)
+    feasible = np.asarray(solutions.stats.infeasibility) <= FEASIBILITY_TOLERANCE
+    return BatchRecord(
+        family=family.name,
+        batch_size=batch_size,
+        solved=int(np.sum(converged & feasible)),
+        seconds=min(times),
+        compile_seconds=compile_seconds,
+        minimum_steps=int(steps.min()),
+        median_steps=float(np.median(steps)),
+        maximum_steps=int(steps.max()),
     )
-    rng = np.random.default_rng(0)
-    for batch_size in BATCH_SIZES:
-        targets = jnp.asarray(rng.uniform(36.0, 44.0, batch_size))
-        solutions = solve_batch(targets)
-        seconds = seconds_for(targets)
-        steps = np.asarray(solutions.stats.num_steps)
-        milliseconds = 1000 * seconds
-        print(
-            f"{batch_size:6d} {milliseconds:9.2f} {milliseconds / batch_size:11.3f} "
-            f"{steps.max():10d} {steps.min():10d}"
-        )
+
+
+def main() -> None:
+    """Parse the command line, run the batches and write a result file."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    aulax_configurations = sorted(
+        name
+        for name, configuration in CONFIGURATIONS.items()
+        if isinstance(configuration, AulaxConfiguration)
+    )
+    parser.add_argument("--config", required=True, choices=aulax_configurations)
+    parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--output-dir", type=Path, default=RESULTS_DIRECTORY)
+    arguments = parser.parse_args()
+
+    jax.config.update("jax_enable_x64", True)
+    configuration = CONFIGURATIONS[arguments.config]
+    assert isinstance(configuration, AulaxConfiguration)
+    records = []
+    print(f"device: {jax.devices()[0].device_kind}")
+    for family in FAMILIES:
+        for batch_size in BATCH_SIZES:
+            record = run_family(family, configuration, batch_size, arguments.repeats)
+            records.append(record)
+            print(
+                f"{family.name:24} {batch_size:6d} solved {record.solved:5d} "
+                f"{1000 * record.seconds:10.2f} ms "
+                f"{1000 * record.seconds / batch_size:8.3f} ms/problem "
+                f"steps {record.minimum_steps}-{record.maximum_steps}"
+            )
+    content = {
+        "configuration": arguments.config,
+        "commit": current_commit(),
+        "versions": package_versions(),
+        "device": jax.devices()[0].device_kind,
+        "date": datetime.datetime.now().isoformat(timespec="seconds"),
+        "records": [dataclasses.asdict(record) for record in records],
+    }
+    path = arguments.output_dir / f"batched-{arguments.config}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(content, indent=2) + "\n")
+    print(f"Wrote {path}")
 
 
 if __name__ == "__main__":

@@ -10,8 +10,13 @@ import aulax as alx
 FEASIBILITY_TOLERANCE = 1e-6
 """The largest constraint violation a solution may have to count as solved."""
 
-OBJECTIVE_RELATIVE_TOLERANCE = 1e-6
-"""The relative difference from the known objective that still counts as equal."""
+OBJECTIVE_RELATIVE_TOLERANCE = 1e-5
+"""The relative difference from the known objective that still counts as equal.
+
+A solution may violate its constraints by up to `FEASIBILITY_TOLERANCE`, which
+moves the objective by about that violation times the multipliers. This
+tolerance leaves room for multipliers of about ten.
+"""
 
 OBJECTIVE_ABSOLUTE_TOLERANCE = 1e-8
 """The absolute difference from the known objective that still counts as equal,

@@ -10,6 +10,8 @@ import jax.numpy as jnp
 import numpy as np
 import optimistix as optx
 import scipy.optimize
+from jax.flatten_util import ravel_pytree
+from jaxtyping import PyTree
 
 import aulax as alx
 
@@ -37,21 +39,27 @@ class Configuration(Protocol):
         ...
 
 
+def _as_jax(tree: PyTree) -> PyTree:
+    """Return `tree` with every leaf converted to a JAX array."""
+    return jax.tree.map(jnp.asarray, tree)
+
+
 def _problem_sizes(problem: BenchmarkProblem) -> tuple[int, int, int]:
     """Return the number of variables, equality and inequality residuals."""
-    evaluation = problem.problem(jnp.asarray(problem.y0), problem.args, None)
+    evaluation = problem.problem(_as_jax(problem.y0), problem.args, None)
     return (
-        int(np.size(problem.y0)),
+        flat_leaves(problem.y0).size,
         flat_leaves(evaluation.equality).size,
         flat_leaves(evaluation.inequality).size,
     )
 
 
-def _solution_error(problem: BenchmarkProblem, value: np.ndarray) -> float | None:
+def _solution_error(problem: BenchmarkProblem, value: PyTree) -> float | None:
     """Return the largest difference from the known minimizer, if there is one."""
     if problem.solution is None:
         return None
-    return float(np.max(np.abs(value - problem.solution)))
+    difference = flat_leaves(value) - flat_leaves(problem.solution)
+    return float(np.max(np.abs(difference)))
 
 
 def _error_record(problem: BenchmarkProblem, error: Exception) -> SolveRecord:
@@ -121,7 +129,7 @@ class AulaxConfiguration:
                 throw=False,
             )
 
-        y0 = jnp.asarray(problem.y0)
+        y0 = _as_jax(problem.y0)
         start = time.perf_counter()
         solution = jax.block_until_ready(solve(y0, problem.args))
         compile_seconds = time.perf_counter() - start
@@ -131,7 +139,7 @@ class AulaxConfiguration:
             lambda: jax.block_until_ready(solve(y0, problem.args)), repeats
         )
 
-        value = np.asarray(solution.value)
+        value = jax.tree.map(np.asarray, solution.value)
         evaluation = problem.problem(solution.value, problem.args, None)
         objective = float(evaluation.objective)
         infeasibility = constraint_violation(evaluation)
@@ -172,8 +180,14 @@ class _CachedDerivatives:
     """
 
     def __init__(self, problem: BenchmarkProblem):
-        def flat_values(y):
-            evaluation = problem.problem(y, problem.args, None)
+        flat_y0, unravel = ravel_pytree(_as_jax(problem.y0))
+        self.flat_y0 = np.asarray(flat_y0)
+        """The starting point as one flat array."""
+        self.unravel = unravel
+        """The function that turns a flat array back into the shape of `y0`."""
+
+        def flat_values(flat_y):
+            evaluation = problem.problem(unravel(flat_y), problem.args, None)
             return (
                 evaluation.objective,
                 _flat(evaluation.equality),
@@ -246,7 +260,7 @@ class ScipyConfiguration:
     def _run(self, problem: BenchmarkProblem, cache: _CachedDerivatives):
         """Run SciPy once with the evaluations from `cache`."""
         constraints = []
-        _, equality, inequality = cache.values(problem.y0)
+        _, equality, inequality = cache.values(cache.flat_y0)
         if equality.size:
             constraints.append(
                 {
@@ -266,7 +280,7 @@ class ScipyConfiguration:
             )
         return scipy.optimize.minimize(
             lambda x: float(cache.values(x)[0]),
-            problem.y0,
+            cache.flat_y0,
             jac=lambda x: cache.derivatives(x)[0],
             method=self.method,
             constraints=constraints,
@@ -283,7 +297,8 @@ class ScipyConfiguration:
         seconds = _best_time(
             lambda: self._run(problem, _CachedDerivatives(problem)), repeats
         )
-        evaluation = problem.problem(jnp.asarray(result.x), problem.args, None)
+        value = cache.unravel(jnp.asarray(result.x))
+        evaluation = problem.problem(value, problem.args, None)
         objective = float(evaluation.objective)
         infeasibility = constraint_violation(evaluation)
         variables, equality, inequality = _problem_sizes(problem)
@@ -300,7 +315,7 @@ class ScipyConfiguration:
             derivative_evaluations=cache.derivative_evaluations,
             objective=objective,
             known_objective=problem.objective,
-            solution_error=_solution_error(problem, result.x),
+            solution_error=_solution_error(problem, value),
             infeasibility=infeasibility,
             seconds=seconds,
             compile_seconds=compile_seconds,
