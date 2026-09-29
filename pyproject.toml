@@ -56,3 +56,5 @@ testpaths = ["tests", "docs"]
 [tool.ruff.lint.isort]
 # Two blank lines after the imports, matching equinox, lineax and optimistix.
 lines-after-imports = 2
+# Keep the `import x as x` re-exports of a module in one block.
+combine-as-imports = true
