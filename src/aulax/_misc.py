@@ -4,7 +4,14 @@ from collections.abc import Callable
 
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, ArrayLike, Bool, PyTree, Scalar
+from jaxtyping import Array, ArrayLike, Bool, DTypeLike, PyTree, Scalar
+
+
+def dtype_default(
+    dtype: DTypeLike, double_precision: float, single_precision: float
+) -> float:
+    """Return the default for a dtype with at least 64 bits, or else for 32 bits."""
+    return double_precision if jnp.finfo(dtype).bits >= 64 else single_precision
 
 
 def _weak_zero() -> Scalar:

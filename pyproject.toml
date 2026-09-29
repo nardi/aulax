@@ -52,6 +52,8 @@ convention = "google"
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
 testpaths = ["tests", "docs"]
+# Tests import the shared test problems from `tests/problems.py`.
+pythonpath = ["tests"]
 
 [tool.ruff.lint.isort]
 # Two blank lines after the imports, matching equinox, lineax and optimistix.

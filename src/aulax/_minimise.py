@@ -1,0 +1,331 @@
+from collections.abc import Callable
+from typing import Any, Generic
+
+import equinox as eqx
+import jax
+import jax.numpy as jnp
+from jaxtyping import Array, Bool, Int, PyTree, Scalar
+
+from ._lagrangian import (
+    augmented_lagrangian,
+    kkt_infeasibility,
+    lagrangian,
+    penalty_infeasibility,
+)
+from ._misc import tree_full_like, tree_max_norm, tree_where
+from ._problem import Args, Aux, Constraints, Evaluation, ProblemFunction, State, Y
+from ._solution import RESULTS, Solution, Statistics
+from ._solver import AugmentedLagrangian
+
+
+class _InnerArgs(eqx.Module, Generic[Args, State]):
+    """The `args` of the augmented Lagrangian that the inner solver minimizes."""
+
+    args: Args
+    """The user's `args`."""
+    state: State
+    """The problem state to pass to the next evaluation."""
+    multipliers: Constraints
+    """The safeguarded multipliers of the current augmented Lagrangian."""
+    penalty: Constraints
+    """The penalty of the current augmented Lagrangian."""
+
+
+InnerFunction = Callable[[Y, _InnerArgs], tuple[Scalar, Evaluation]]
+"""The augmented Lagrangian as an optimistix function, with the evaluation as aux."""
+
+
+def _inner_function(problem: ProblemFunction) -> InnerFunction:
+    """Wrap `problem` as the augmented Lagrangian in the optimistix signature."""
+
+    def augmented_lagrangian_function(
+        y: Y, inner_args: _InnerArgs
+    ) -> tuple[Scalar, Evaluation]:
+        state = jax.lax.stop_gradient(inner_args.state)
+        evaluation = problem(y, inner_args.args, state)
+        value = augmented_lagrangian(
+            evaluation, inner_args.multipliers, inner_args.penalty
+        )
+        return value, evaluation
+
+    return augmented_lagrangian_function
+
+
+class _LoopState(eqx.Module):
+    """The carry of the solver loop."""
+
+    y: PyTree[Array]
+    """The current point of the inner solve."""
+    inner_state: PyTree[Array]
+    """The array part of the inner solver state."""
+    evaluation: Evaluation
+    """The latest evaluation the inner solver returned.
+
+    It belongs to the point that went into the last inner step, and to the inner
+    solution right after an outer update.
+    """
+    multipliers: Constraints
+    """The safeguarded multipliers of the current augmented Lagrangian."""
+    multiplier_estimates: Constraints
+    """The multiplier estimates from the last outer update."""
+    penalty: Constraints
+    """The penalty of the current augmented Lagrangian."""
+    previous_infeasibility: Constraints
+    """The elementwise infeasibility after the previous inner solve."""
+    inner_tolerance: Scalar
+    """The tolerance of the current inner solve."""
+    inner_steps: Int[Array, ""]
+    """The number of steps in the current inner solve."""
+    update_pending: Bool[Array, ""]
+    """Whether the inner solve has finished and the next iteration updates."""
+    num_steps: Int[Array, ""]
+    """The number of loop iterations so far."""
+    num_outer_steps: Int[Array, ""]
+    """The number of outer updates so far."""
+    terminate: Bool[Array, ""]
+    """Whether the solve has converged."""
+    result: RESULTS
+    """The outcome of the solve so far."""
+
+
+def _as_inexact_array(leaf: Any) -> Array:
+    """Convert `leaf` to an array with a floating-point dtype."""
+    array = jnp.asarray(leaf)
+    if jnp.issubdtype(array.dtype, jnp.inexact):
+        return array
+    return array.astype(float)
+
+
+def _tree_all_finite(tree: PyTree[Array]) -> Bool[Array, ""]:
+    """Return whether every element of `tree` is finite."""
+    leaves = [jnp.all(jnp.isfinite(leaf)) for leaf in jax.tree.leaves(tree)]
+    return jnp.all(jnp.stack(leaves)) if leaves else jnp.array(True)
+
+
+@eqx.filter_jit
+def minimise(
+    problem: ProblemFunction[Y, Args, State, Aux],
+    solver: AugmentedLagrangian,
+    y0: Y,
+    # `None` is the default for problems without `args` or `state`, which a
+    # generic parameter cannot express.
+    args: Args = None,  # ty: ignore[invalid-parameter-default]
+    state: State = None,  # ty: ignore[invalid-parameter-default]
+    *,
+    multipliers: Constraints | None = None,
+    options: dict[str, Any] | None = None,
+    max_steps: int = 1024,
+    throw: bool = True,
+) -> Solution[Y, State, Aux]:
+    """Minimize a function subject to equality and inequality constraints.
+
+    Args:
+        problem: The problem function, called as `problem(y, args, state)`. It
+            returns an `Evaluation` with the objective, the constraint residuals,
+            the next state and any aux output.
+        solver: The solver, usually an `AugmentedLagrangian`.
+        y0: The initial point, any pytree of arrays.
+        args: Passed as the `args` of every call to `problem`.
+        state: The state for the first call to `problem`. Later calls receive the
+            `state` returned by the previous evaluation.
+        multipliers: Initial multipliers, shaped like the constraints. `None`
+            starts from zero.
+        options: Runtime options passed to the inner solver.
+        max_steps: The maximum number of inner steps, summed over all inner
+            solves.
+        throw: Whether to raise an error when the solve fails. If `False`, check
+            `Solution.result` instead.
+
+    Returns:
+        A `Solution` with the minimizer, the multipliers and the final state.
+    """
+    y0 = jax.tree.map(_as_inexact_array, y0)
+    options = {} if options is None else options
+    tags = frozenset()
+    evaluation0 = problem(y0, args, state)
+    objective = jnp.asarray(evaluation0.objective)
+    if objective.shape != () or not jnp.issubdtype(objective.dtype, jnp.floating):
+        raise ValueError("The objective must be a floating-point scalar.")
+
+    if multipliers is None:
+        multipliers = Constraints(
+            equality=tree_full_like(evaluation0.equality, 0.0),
+            inequality=tree_full_like(evaluation0.inequality, 0.0),
+        )
+    safeguarded_multipliers = solver.multiplier_update.safeguard_multipliers(
+        multipliers, evaluation0
+    )
+    penalty = solver.penalty_update.initial_penalty(evaluation0)
+    inner_tolerance = jnp.asarray(
+        solver.tolerance_schedule.initial_tolerance(), dtype=objective.dtype
+    )
+
+    inner_function = _inner_function(problem)
+    inner_args0 = _InnerArgs(args, evaluation0.state, safeguarded_multipliers, penalty)
+    f_struct, aux_struct = jax.eval_shape(inner_function, y0, inner_args0)
+    inner_state0 = solver.inner.init(
+        inner_function, y0, inner_args0, options, f_struct, aux_struct, tags
+    )
+    # A loop carry holds arrays only, so the static part of the inner state stays
+    # outside and is combined with the array part inside the loop.
+    dynamic_inner_state0, static_inner_state = eqx.partition(inner_state0, eqx.is_array)
+
+    def reinitialize_inner_state(y: Y, inner_args: _InnerArgs) -> PyTree[Array]:
+        """Return the array part of a fresh inner solver state at `y`."""
+        new_state = solver.inner.init(
+            inner_function, y, inner_args, options, f_struct, aux_struct, tags
+        )
+        dynamic_state, _ = eqx.partition(new_state, eqx.is_array)
+        return dynamic_state
+
+    def inner_step(loop: _LoopState) -> _LoopState:
+        """Take one inner step, and mark the inner solve finished if it has."""
+        inner = solver.inner_at_tolerance(loop.inner_tolerance)
+        inner_args = _InnerArgs(
+            args, loop.evaluation.state, loop.multipliers, loop.penalty
+        )
+        inner_state = eqx.combine(loop.inner_state, static_inner_state)
+        new_y, new_inner_state, evaluation = inner.step(
+            inner_function, loop.y, inner_args, options, inner_state, tags
+        )
+        inner_terminate, inner_result = inner.terminate(
+            inner_function, new_y, inner_args, options, new_inner_state, tags
+        )
+        new_dynamic_inner_state, _ = eqx.partition(new_inner_state, eqx.is_array)
+        inner_steps = loop.inner_steps + 1
+        result = RESULTS.where(
+            _tree_all_finite(new_y),
+            RESULTS.promote(inner_result),
+            RESULTS.nonfinite,  # ty: ignore[invalid-argument-type]
+        )
+        return eqx.tree_at(
+            lambda loop: (
+                loop.y,
+                loop.inner_state,
+                loop.evaluation,
+                loop.inner_steps,
+                loop.update_pending,
+                loop.result,
+            ),
+            loop,
+            (
+                new_y,
+                new_dynamic_inner_state,
+                evaluation,
+                inner_steps,
+                inner_terminate | (inner_steps >= solver.inner_max_steps),
+                result,
+            ),
+        )
+
+    def outer_update(loop: _LoopState, evaluation: Evaluation) -> _LoopState:
+        """Update multipliers and penalty from the inner solution, and restart."""
+        estimates = solver.multiplier_update.update_multipliers(
+            loop.multipliers, loop.penalty, evaluation
+        )
+        infeasibility = penalty_infeasibility(
+            evaluation, loop.multipliers, loop.penalty
+        )
+        new_penalty, penalty_stalled = solver.penalty_update.update_penalty(
+            loop.penalty, infeasibility, loop.previous_infeasibility
+        )
+        new_multipliers = solver.multiplier_update.safeguard_multipliers(
+            estimates, evaluation
+        )
+        converged = solver.is_final_tolerance(loop.inner_tolerance) & (
+            kkt_infeasibility(evaluation, estimates)
+            <= solver.feasibility_tolerance_for(objective.dtype)
+        )
+        infeasible = penalty_stalled & jnp.invert(converged)
+        new_tolerance = jnp.maximum(
+            solver.tolerance_schedule.update_tolerance(loop.inner_tolerance),
+            solver.final_inner_tolerance(),
+        )
+        new_inner_args = _InnerArgs(
+            args, evaluation.state, new_multipliers, new_penalty
+        )
+        return _LoopState(
+            y=loop.y,
+            inner_state=reinitialize_inner_state(loop.y, new_inner_args),
+            evaluation=evaluation,
+            multipliers=new_multipliers,
+            multiplier_estimates=estimates,
+            penalty=new_penalty,
+            previous_infeasibility=infeasibility,
+            inner_tolerance=new_tolerance.astype(loop.inner_tolerance.dtype),
+            inner_steps=jnp.array(0),
+            update_pending=jnp.array(False),
+            num_steps=loop.num_steps,
+            num_outer_steps=loop.num_outer_steps + 1,
+            terminate=converged | infeasible,
+            result=RESULTS.where(infeasible, RESULTS.infeasible, loop.result),
+        )
+
+    def body(loop: _LoopState) -> _LoopState:
+        """Run one loop iteration, which always calls the inner `step` once.
+
+        The inner solver returns the evaluation of the point that went into
+        `step`. After the inner solve finishes at a point, the next iteration
+        steps from that point to obtain its evaluation, updates the multipliers
+        from it, and discards the step itself.
+        """
+        stepped = inner_step(loop)
+        updated = outer_update(loop, stepped.evaluation)
+        new_loop = tree_where(loop.update_pending, updated, stepped)
+        return eqx.tree_at(lambda loop: loop.num_steps, new_loop, loop.num_steps + 1)
+
+    def keep_going(loop: _LoopState) -> Bool[Array, ""]:
+        """Return whether the loop continues."""
+        return (
+            jnp.invert(loop.terminate)
+            & (loop.result == RESULTS.successful)
+            & (loop.num_steps < max_steps)
+        )
+
+    loop0 = _LoopState(
+        y=y0,
+        inner_state=dynamic_inner_state0,
+        evaluation=evaluation0,
+        multipliers=safeguarded_multipliers,
+        multiplier_estimates=multipliers,
+        penalty=penalty,
+        previous_infeasibility=tree_full_like(
+            Constraints(evaluation0.equality, evaluation0.inequality), jnp.inf
+        ),
+        inner_tolerance=inner_tolerance,
+        inner_steps=jnp.array(0),
+        update_pending=jnp.array(False),
+        num_steps=jnp.array(0),
+        num_outer_steps=jnp.array(0),
+        terminate=jnp.array(False),
+        result=RESULTS.successful,  # ty: ignore[invalid-argument-type]
+    )
+    loop = jax.lax.while_loop(keep_going, body, loop0)
+    result = RESULTS.where(
+        (loop.result == RESULTS.successful) & jnp.invert(loop.terminate),
+        RESULTS.nonlinear_max_steps_reached,  # ty: ignore[invalid-argument-type]
+        loop.result,
+    )
+
+    def solution_lagrangian(y: Y) -> Scalar:
+        evaluation = problem(y, args, jax.lax.stop_gradient(loop.evaluation.state))
+        return lagrangian(evaluation, loop.multiplier_estimates)
+
+    stationarity = tree_max_norm(jax.grad(solution_lagrangian)(loop.y))
+    solution = Solution(
+        value=loop.y,
+        result=result,
+        multipliers=loop.multiplier_estimates,
+        state=loop.evaluation.state,
+        aux=loop.evaluation.aux,
+        stats=Statistics(
+            num_steps=loop.num_steps,
+            num_outer_steps=loop.num_outer_steps,
+            penalty=loop.penalty,
+            infeasibility=kkt_infeasibility(loop.evaluation, loop.multiplier_estimates),
+            stationarity=stationarity,
+        ),
+    )
+    if throw:
+        solution = result.error_if(solution, result != RESULTS.successful)
+    return solution

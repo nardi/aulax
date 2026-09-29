@@ -5,15 +5,8 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Bool, DTypeLike, Scalar
 
-from ._misc import tree_any, tree_full_like, tree_max_norm, tree_sum
+from ._misc import dtype_default, tree_any, tree_full_like, tree_max_norm, tree_sum
 from ._problem import Constraints, Evaluation
-
-
-def _dtype_default(
-    dtype: DTypeLike, double_precision: float, single_precision: float
-) -> float:
-    """Return the default for a dtype with at least 64 bits, or else for 32 bits."""
-    return double_precision if jnp.finfo(dtype).bits >= 64 else single_precision
 
 
 def _constraint_dtype(evaluation: Evaluation) -> DTypeLike:
@@ -68,12 +61,12 @@ class SafeguardedMultiplierUpdate(eqx.Module):
         """Clip the multipliers to the safeguarding box."""
         dtype = _constraint_dtype(evaluation)
         equality_bound = (
-            _dtype_default(dtype, 1e20, 1e6)
+            dtype_default(dtype, 1e20, 1e6)
             if self.equality_bound is None
             else self.equality_bound
         )
         inequality_bound = (
-            _dtype_default(dtype, 1e20, 1e6)
+            dtype_default(dtype, 1e20, 1e6)
             if self.inequality_bound is None
             else self.inequality_bound
         )
@@ -198,7 +191,7 @@ class AlgencanPenaltyUpdate(eqx.Module):
         """Grow the penalty where the infeasibility did not decrease enough."""
         dtype = jnp.result_type(*jax.tree.leaves(penalty))
         maximum = (
-            _dtype_default(dtype, 1e12, 1e6)
+            dtype_default(dtype, 1e12, 1e6)
             if self.maximum_value is None
             else self.maximum_value
         )

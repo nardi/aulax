@@ -5,11 +5,18 @@ The conventional import style is `import aulax as alx`.
 
 import importlib.metadata
 
+from ._minimise import minimise as minimise
 from ._problem import (
     Constraints as Constraints,
     Evaluation as Evaluation,
     ProblemFunction as ProblemFunction,
 )
+from ._solution import (
+    RESULTS as RESULTS,
+    Solution as Solution,
+    Statistics as Statistics,
+)
+from ._solver import AugmentedLagrangian as AugmentedLagrangian
 from ._updates import (
     AlgencanPenaltyUpdate as AlgencanPenaltyUpdate,
     GeometricToleranceSchedule as GeometricToleranceSchedule,
