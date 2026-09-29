@@ -61,7 +61,9 @@ Tests and examples on this site run in float64, which we enable with `jax.config
 ```python
 float32_solver = alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-5, atol=1e-5))
 point = jnp.array([0.6, 0.5, -0.4], dtype=jnp.float32)
-solution = alx.minimise(simplex_projection, float32_solver, jnp.full(3, 1 / 3, jnp.float32), point)
+solution = alx.minimise(
+    simplex_projection, float32_solver, jnp.full(3, 1 / 3, jnp.float32), point
+)
 assert solution.value.dtype == jnp.float32
 assert jnp.allclose(solution.value, jnp.array([0.55, 0.45, 0.0]), atol=1e-3)
 ```
@@ -107,7 +109,9 @@ A sequence of nearby problems, like the steps of a model predictive controller, 
 ```python
 first = alx.minimise(simplex_projection, gentle_solver, jnp.full(100, 0.01), point)
 shifted_point = point + 0.01
-cold = alx.minimise(simplex_projection, gentle_solver, jnp.full(100, 0.01), shifted_point)
+cold = alx.minimise(
+    simplex_projection, gentle_solver, jnp.full(100, 0.01), shifted_point
+)
 warm = alx.minimise(
     simplex_projection,
     gentle_solver,
