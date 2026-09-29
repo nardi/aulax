@@ -51,7 +51,7 @@ assert jnp.allclose(projections[0], jnp.array([0.55, 0.45, 0.0]), atol=1e-5)
 assert jnp.allclose(projections[2], jnp.array([1.0, 0.0, 0.0]), atol=1e-5)
 ```
 
-Every problem in the batch runs until the slowest one finishes, since the batch shares one loop. Within that loop, each problem updates its own multipliers whenever its own inner solve is done, without waiting for the others. The [theory](../theory.md#solver-loop) page explains why the loop is built that way.
+Every problem in the batch runs until the slowest one finishes, since the batch shares one loop. Within that loop, each problem updates its own multipliers whenever its own inner solve is done, without waiting for the others. The [theory](../theory.md#the-solver-loop) page explains why the loop is built that way.
 
 ### Precision
 
