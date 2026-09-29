@@ -62,3 +62,7 @@ pythonpath = ["tests"]
 lines-after-imports = 2
 # Keep the `import x as x` re-exports of a module in one block.
 combine-as-imports = true
+
+[tool.ty.environment]
+# The benchmarks import the shared test problems from `tests/problems.py`.
+extra-paths = ["tests"]
