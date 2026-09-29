@@ -10,6 +10,14 @@ from ._problem import (
     Evaluation as Evaluation,
     ProblemFunction as ProblemFunction,
 )
+from ._updates import (
+    AlgencanPenaltyUpdate as AlgencanPenaltyUpdate,
+    GeometricToleranceSchedule as GeometricToleranceSchedule,
+    MultiplierUpdate as MultiplierUpdate,
+    PenaltyUpdate as PenaltyUpdate,
+    SafeguardedMultiplierUpdate as SafeguardedMultiplierUpdate,
+    ToleranceSchedule as ToleranceSchedule,
+)
 
 
 __version__ = importlib.metadata.version("aulax")

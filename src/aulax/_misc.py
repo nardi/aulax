@@ -31,6 +31,12 @@ def tree_max_norm(tree: PyTree[Array]) -> Scalar:
     return functools.reduce(jnp.maximum, leaf_maxima, _weak_zero())
 
 
+def tree_any(tree: PyTree[Bool[Array, "..."]]) -> Bool[Array, ""]:
+    """Return whether any element of `tree` is true, or false if it has no leaves."""
+    leaf_results = [jnp.any(leaf) for leaf in jax.tree.leaves(tree)]
+    return functools.reduce(jnp.logical_or, leaf_results, jnp.array(False))
+
+
 def tree_where(
     condition: Bool[ArrayLike, ""], true_tree: PyTree, false_tree: PyTree
 ) -> PyTree:
