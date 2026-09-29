@@ -37,6 +37,8 @@ ignore = [
     # jaxtyping shape strings such as " n" start with a space on purpose, and
     # ruff reads them as forward references that fail to parse.
     "F722",
+    # Equinox modules are immutable, so a module instance is a safe default.
+    "B008",
     # Private modules and test files do not need module or package docstrings.
     "D100",
     "D104",

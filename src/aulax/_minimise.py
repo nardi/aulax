@@ -4,6 +4,8 @@ from typing import Any, Generic
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import lineax as lx
+import optimistix as optx
 from jaxtyping import Array, Bool, Int, PyTree, Scalar
 
 from ._lagrangian import (
@@ -96,56 +98,50 @@ def _as_inexact_array(leaf: Any) -> Array:
     return array.astype(float)
 
 
+def _python_float_as_array(leaf: Any) -> Any:
+    """Convert a Python float or complex number to an array, and keep the rest.
+
+    The adjoint turns floating-point leaves into arrays on the way in, so the
+    problem has to see them as arrays from the start.
+    """
+    if isinstance(leaf, float | complex):
+        return jnp.asarray(leaf)
+    return leaf
+
+
 def _tree_all_finite(tree: PyTree[Array]) -> Bool[Array, ""]:
     """Return whether every element of `tree` is finite."""
     leaves = [jnp.all(jnp.isfinite(leaf)) for leaf in jax.tree.leaves(tree)]
     return jnp.all(jnp.stack(leaves)) if leaves else jnp.array(True)
 
 
-@eqx.filter_jit
-def minimise(
-    problem: ProblemFunction[Y, Args, State, Aux],
-    solver: AugmentedLagrangian,
-    y0: Y,
-    # `None` is the default for problems without `args` or `state`, which a
-    # generic parameter cannot express.
-    args: Args = None,  # ty: ignore[invalid-parameter-default]
-    state: State = None,  # ty: ignore[invalid-parameter-default]
-    *,
-    multipliers: Constraints | None = None,
-    options: dict[str, Any] | None = None,
-    max_steps: int = 1024,
-    throw: bool = True,
-) -> Solution[Y, State, Aux]:
-    """Minimize a function subject to equality and inequality constraints.
+class _SolveOutputs(eqx.Module):
+    """The outputs of a solve that are not differentiated."""
 
-    Args:
-        problem: The problem function, called as `problem(y, args, state)`. It
-            returns an `Evaluation` with the objective, the constraint residuals,
-            the next state and any aux output.
-        solver: The solver, usually an `AugmentedLagrangian`.
-        y0: The initial point, any pytree of arrays.
-        args: Passed as the `args` of every call to `problem`.
-        state: The state for the first call to `problem`. Later calls receive the
-            `state` returned by the previous evaluation.
-        multipliers: Initial multipliers, shaped like the constraints. `None`
-            starts from zero.
-        options: Runtime options passed to the inner solver.
-        max_steps: The maximum number of inner steps, summed over all inner
-            solves.
-        throw: Whether to raise an error when the solve fails. If `False`, check
-            `Solution.result` instead.
+    evaluation: Evaluation
+    """The evaluation at the solution, with its state and aux output."""
+    active: PyTree[Bool[Array, "..."]]
+    """Which inequality constraints are active at the solution."""
+    result: RESULTS
+    """The outcome of the solve."""
+    stats: Statistics
+    """Statistics about the solve."""
 
-    Returns:
-        A `Solution` with the minimizer, the multipliers and the final state.
+
+def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutputs]:
+    """Run the solver loop and return the minimizer and multipliers.
+
+    `inputs` holds the problem, the solver, `y0`, `args`, the initial state and
+    multipliers, the inner solver options, the step limit and the while loop to
+    run. It is a single tuple so that an optimistix adjoint can differentiate
+    through it.
     """
-    y0 = jax.tree.map(_as_inexact_array, y0)
-    options = {} if options is None else options
+    problem, solver, y0, args, state, multipliers, options, max_steps, while_loop = (
+        inputs
+    )
     tags = frozenset()
     evaluation0 = problem(y0, args, state)
     objective = jnp.asarray(evaluation0.objective)
-    if objective.shape != () or not jnp.issubdtype(objective.dtype, jnp.floating):
-        raise ValueError("The objective must be a floating-point scalar.")
 
     if multipliers is None:
         multipliers = Constraints(
@@ -300,7 +296,7 @@ def minimise(
         terminate=jnp.array(False),
         result=RESULTS.successful,  # ty: ignore[invalid-argument-type]
     )
-    loop = jax.lax.while_loop(keep_going, body, loop0)
+    loop = while_loop(keep_going, body, loop0, max_steps=max_steps)
     result = RESULTS.where(
         (loop.result == RESULTS.successful) & jnp.invert(loop.terminate),
         RESULTS.nonlinear_max_steps_reached,  # ty: ignore[invalid-argument-type]
@@ -312,12 +308,16 @@ def minimise(
         return lagrangian(evaluation, loop.multiplier_estimates)
 
     stationarity = tree_max_norm(jax.grad(solution_lagrangian)(loop.y))
-    solution = Solution(
-        value=loop.y,
+    # An inequality constraint counts as active when its multiplier is positive.
+    # A constraint that holds with equality but has a zero multiplier is treated
+    # as inactive, which is one of the valid derivatives at such a point.
+    active = jax.tree.map(
+        lambda multiplier: multiplier > 0.0, loop.multiplier_estimates.inequality
+    )
+    outputs = _SolveOutputs(
+        evaluation=loop.evaluation,
+        active=active,
         result=result,
-        multipliers=loop.multiplier_estimates,
-        state=loop.evaluation.state,
-        aux=loop.evaluation.aux,
         stats=Statistics(
             num_steps=loop.num_steps,
             num_outer_steps=loop.num_outer_steps,
@@ -326,6 +326,118 @@ def minimise(
             stationarity=stationarity,
         ),
     )
+    return (loop.y, loop.multiplier_estimates), outputs
+
+
+def _kkt_residual(
+    root: tuple[PyTree[Array], Constraints], outputs: _SolveOutputs, inputs: tuple
+) -> tuple[PyTree[Array], Constraints]:
+    r"""Return the KKT residual whose root is the solution, for implicit derivatives.
+
+    The residual is $\nabla_y L$, then $h$, then $g_j$ for an active inequality
+    and $-\mu_j$ for an inactive one. The active set is fixed at the solution, so
+    the residual keeps its shape whichever constraints are active. The gradient
+    only includes the multipliers of active constraints, which makes the Jacobian
+    with respect to `root` symmetric.
+    """
+    y, multipliers = root
+    problem, _, _, args, *_ = inputs
+    state = jax.lax.stop_gradient(outputs.evaluation.state)
+    active_multipliers = Constraints(
+        equality=multipliers.equality,
+        inequality=jax.tree.map(
+            lambda multiplier, active: jnp.where(active, multiplier, 0.0),
+            multipliers.inequality,
+            outputs.active,
+        ),
+    )
+
+    def solution_lagrangian(y: PyTree[Array]) -> tuple[Scalar, Evaluation]:
+        evaluation = problem(y, args, state)
+        return lagrangian(evaluation, active_multipliers), evaluation
+
+    gradient, evaluation = jax.grad(solution_lagrangian, has_aux=True)(y)
+    inequality_residual = jax.tree.map(
+        lambda residual, multiplier, active: jnp.where(active, residual, -multiplier),
+        evaluation.inequality,
+        multipliers.inequality,
+        outputs.active,
+    )
+    return gradient, Constraints(evaluation.equality, inequality_residual)
+
+
+@eqx.filter_jit
+def minimise(
+    problem: ProblemFunction[Y, Args, State, Aux],
+    solver: AugmentedLagrangian,
+    y0: Y,
+    # `None` is the default for problems without `args` or `state`, which a
+    # generic parameter cannot express.
+    args: Args = None,  # ty: ignore[invalid-parameter-default]
+    state: State = None,  # ty: ignore[invalid-parameter-default]
+    *,
+    multipliers: Constraints | None = None,
+    options: dict[str, Any] | None = None,
+    max_steps: int = 1024,
+    adjoint: optx.AbstractAdjoint = optx.ImplicitAdjoint(),
+    throw: bool = True,
+) -> Solution[Y, State, Aux]:
+    """Minimize a function subject to equality and inequality constraints.
+
+    Args:
+        problem: The problem function, called as `problem(y, args, state)`. It
+            returns an `Evaluation` with the objective, the constraint residuals,
+            the next state and any aux output.
+        solver: The solver, usually an `AugmentedLagrangian`.
+        y0: The initial point, any pytree of arrays.
+        args: Passed as the `args` of every call to `problem`.
+        state: The state for the first call to `problem`. Later calls receive the
+            `state` returned by the previous evaluation.
+        multipliers: Initial multipliers, shaped like the constraints. `None`
+            starts from zero.
+        options: Runtime options passed to the inner solver.
+        max_steps: The maximum number of inner steps, summed over all inner
+            solves.
+        adjoint: How to differentiate the solution. `optimistix.ImplicitAdjoint`
+            applies the implicit function theorem to the KKT conditions, and
+            `optimistix.RecursiveCheckpointAdjoint` differentiates through every
+            step of the solve.
+        throw: Whether to raise an error when the solve fails. If `False`, check
+            `Solution.result` instead.
+
+    Returns:
+        A `Solution` with the minimizer, the multipliers and the final state.
+        Derivatives flow through `value` and `multipliers` only.
+    """
+    y0 = jax.tree.map(_as_inexact_array, y0)
+    args = jax.tree.map(_python_float_as_array, args)
+    state = jax.tree.map(_python_float_as_array, state)
+    options = {} if options is None else options
+    # Closure conversion turns arrays that `problem` closes over into leaves of a
+    # pytree, so derivatives with respect to them reach the adjoint.
+    problem = eqx.filter_closure_convert(problem, y0, args, state)
+    objective_struct = jax.eval_shape(problem, y0, args, state).objective
+    if objective_struct.shape != () or not jnp.issubdtype(
+        objective_struct.dtype, jnp.floating
+    ):
+        raise ValueError("The objective must be a floating-point scalar.")
+
+    inputs = (problem, solver, y0, args, state, multipliers, options, max_steps)
+    # The KKT residual has a symmetric Jacobian, see `_kkt_residual`.
+    tags = frozenset({lx.symmetric_tag})
+    (value, solution_multipliers), outputs = adjoint.apply(
+        _solve, _kkt_residual, inputs, tags
+    )
+    solution = Solution(
+        value=value,
+        result=outputs.result,
+        multipliers=solution_multipliers,
+        state=outputs.evaluation.state,
+        aux=outputs.evaluation.aux,
+        stats=outputs.stats,
+    )
     if throw:
-        solution = result.error_if(solution, result != RESULTS.successful)
+        solution = outputs.result.error_if(
+            solution, outputs.result != RESULTS.successful
+        )
     return solution
