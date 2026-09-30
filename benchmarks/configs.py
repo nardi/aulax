@@ -375,9 +375,18 @@ class IpoptConfiguration:
     """The `tol` option of IPOPT."""
     max_iterations: int = 3000
     """The `max_iter` option of IPOPT."""
+    max_variables: int = 300
+    """The largest problem to attempt.
+
+    The configuration passes dense Jacobians and Hessians, which JAX compiles as
+    dense derivative programs. Above a few hundred variables these can run out
+    of memory.
+    """
 
     def solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
         """Solve `problem` and count the distinct evaluations IPOPT asked for."""
+        if flat_leaves(problem.y0).size > self.max_variables:
+            return _skipped_record(problem, "Too many variables for dense matrices.")
         try:
             return self._solve(problem, repeats)
         except Exception as error:
