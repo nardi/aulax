@@ -8,6 +8,7 @@ from typing import Protocol
 import jax
 import jax.numpy as jnp
 import numpy as np
+import optax
 import optimistix as optx
 import scipy.optimize
 from jax.flatten_util import ravel_pytree
@@ -519,6 +520,47 @@ _CONFIGURATION_LIST: list[Configuration] = [
             inner=optx.BFGS(rtol=1e-8, atol=1e-8),
             inner_stopping=alx.GradientStopping(relative=False),
             stationarity_tolerance=1e-6,
+        ),
+    ),
+    AulaxConfiguration(
+        name="gradient_keep",
+        description="Gradient stopping, always starting from the last Hessian.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+            inner_state_access=alx.OptimistixStateAccess(hessian_reuse="keep"),
+        ),
+    ),
+    AulaxConfiguration(
+        name="gradient_keep_unless_penalty",
+        description="Gradient stopping, keeping the Hessian unless the penalty grew.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+            inner_state_access=alx.OptimistixStateAccess(
+                hessian_reuse="keep_unless_penalty_increased"
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lbfgs_gradient_keep_unless_penalty",
+        description="L-BFGS with gradient stopping and conditional Hessian reuse.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.LBFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+            inner_state_access=alx.OptimistixStateAccess(
+                hessian_reuse="keep_unless_penalty_increased"
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="optax_lbfgs",
+        description="The optax L-BFGS, with a line search for the Wolfe conditions.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.lbfgs(), rtol=1e-8, atol=1e-8),
         ),
     ),
     AulaxConfiguration(
