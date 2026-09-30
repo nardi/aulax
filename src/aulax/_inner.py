@@ -1,7 +1,9 @@
 from typing import Protocol
 
 import equinox as eqx
+import jax
 import jax.numpy as jnp
+import lineax as lx
 from jaxtyping import Array, Bool, PyTree, Scalar
 
 from ._misc import tree_max_norm, tree_where
@@ -29,19 +31,25 @@ class InnerStateAccess(Protocol):
         self,
         old_state: PyTree,
         new_state: PyTree,
-        penalty_increased: Bool[Array, ""],
+        penalty_ratio: Scalar,
     ) -> PyTree:
         """Return the inner state to continue with after an outer update.
 
         `new_state` is a fresh state for the new augmented Lagrangian, and
         `old_state` is the state at the end of the previous inner solve. The
         result may carry information over from `old_state`, such as a Hessian
-        approximation.
+        approximation. `penalty_ratio` is the largest ratio of a new to an old
+        penalty, which is one when the penalty stayed the same.
         """
         ...
 
 
-HESSIAN_REUSE_OPTIONS = ("reset", "keep", "keep_unless_penalty_increased")
+HESSIAN_REUSE_OPTIONS = (
+    "reset",
+    "keep",
+    "keep_unless_penalty_increased",
+    "keep_scaled",
+)
 """The choices for `OptimistixStateAccess.hessian_reuse`."""
 
 
@@ -67,7 +75,10 @@ class OptimistixStateAccess(eqx.Module):
     approximation. A multiplier update only changes the Hessian of the augmented
     Lagrangian through the constraint curvature, but a penalty increase adds a
     large term that the old approximation lacks. `"keep_unless_penalty_increased"`
-    therefore resets after a penalty increase.
+    therefore resets after a penalty increase. `"keep_scaled"` instead multiplies
+    the approximation by the penalty ratio, since the penalty term dominates the
+    curvature once the penalty is large. It needs a dense approximation, as BFGS
+    and DFP keep. For `LBFGS` it behaves like `"keep_unless_penalty_increased"`.
     """
 
     def __check_init__(self):
@@ -91,7 +102,7 @@ class OptimistixStateAccess(eqx.Module):
         self,
         old_state: PyTree,
         new_state: PyTree,
-        penalty_increased: Bool[Array, ""],
+        penalty_ratio: Scalar,
     ) -> PyTree:
         """Copy the Hessian approximation into `new_state`, if `hessian_reuse` says so.
 
@@ -110,10 +121,18 @@ class OptimistixStateAccess(eqx.Module):
         if not names:
             return new_state
         name = names[0]
+        operator = getattr(old_state.f_info, name)
+        scalable = isinstance(operator, lx.PyTreeLinearOperator)
+        if self.hessian_reuse == "keep_scaled" and scalable:
+            # The Hessian grows with the penalty, and its inverse shrinks.
+            factor = penalty_ratio if name == "hessian" else 1.0 / penalty_ratio
+            operator = eqx.tree_at(
+                lambda operator: operator.pytree,
+                operator,
+                jax.tree.map(lambda leaf: factor * leaf, operator.pytree),
+            )
         copied = eqx.tree_at(
-            lambda state: getattr(state.f_info, name),
-            new_state,
-            getattr(old_state.f_info, name),
+            lambda state: getattr(state.f_info, name), new_state, operator
         )
         if getattr(new_state, "hessian_update_state", None) is not None:
             copied = eqx.tree_at(
@@ -121,11 +140,13 @@ class OptimistixStateAccess(eqx.Module):
                 copied,
                 old_state.hessian_update_state,
             )
-        if self.hessian_reuse == "keep":
+        if self.hessian_reuse == "keep" or (
+            self.hessian_reuse == "keep_scaled" and scalable
+        ):
             return copied
         dynamic_copied, static = eqx.partition(copied, eqx.is_array)
         dynamic_new, _ = eqx.partition(new_state, eqx.is_array)
-        dynamic = tree_where(penalty_increased, dynamic_new, dynamic_copied)
+        dynamic = tree_where(penalty_ratio > 1.0, dynamic_new, dynamic_copied)
         return eqx.combine(dynamic, static)
 
 

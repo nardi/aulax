@@ -572,6 +572,18 @@ _CONFIGURATION_LIST: list[Configuration] = [
         ),
     ),
     AulaxConfiguration(
+        name="gradient_keep_scaled_floor",
+        description="Gradient stopping, scaling the kept Hessian with the penalty, "
+        "and an initial penalty of at least one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+            inner_state_access=alx.OptimistixStateAccess(hessian_reuse="keep_scaled"),
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
+        ),
+    ),
+    AulaxConfiguration(
         name="lbfgs_gradient_keep_unless_penalty",
         description="L-BFGS with gradient stopping and conditional Hessian reuse.",
         solver=alx.AugmentedLagrangian(

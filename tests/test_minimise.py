@@ -188,7 +188,9 @@ def test_gradient_stopping_reaches_stationarity():
     assert solution.stats.stationarity < 1e-4
 
 
-@pytest.mark.parametrize("hessian_reuse", ["keep", "keep_unless_penalty_increased"])
+@pytest.mark.parametrize(
+    "hessian_reuse", ["keep", "keep_unless_penalty_increased", "keep_scaled"]
+)
 @pytest.mark.parametrize(
     "inner",
     [optx.BFGS(rtol=1e-10, atol=1e-10), optx.LBFGS(rtol=1e-10, atol=1e-10)],
