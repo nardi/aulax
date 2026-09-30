@@ -62,3 +62,36 @@ def test_aulax_solves_adapted_hs71():
     np.testing.assert_allclose(
         solution.value, [1.0, 4.7429994, 3.8211503, 1.3794082], atol=1e-4
     )
+
+
+@pytest.mark.parametrize("name", ["HS71", "HS21", "HS80", "AIRCRFTA"])
+def test_lagrangian_hessian_matches_finite_differences(name):
+    adapted = adapted_problem(name)
+    assert adapted.lagrangian_hessian is not None
+    y = jnp.asarray(adapted.y0) + 0.1
+    evaluation = adapted.problem(y, None, None)
+    residual_count = (
+        flat_leaves(evaluation.equality).size + flat_leaves(evaluation.inequality).size
+    )
+    rng = np.random.default_rng(1)
+    multipliers = rng.normal(size=residual_count)
+    objective_factor = 0.7
+
+    def weighted_lagrangian(point):
+        evaluation = adapted.problem(point, None, None)
+        leaves = jax.tree.leaves(evaluation.equality)
+        leaves += jax.tree.leaves(evaluation.inequality)
+        residuals = jnp.concatenate([jnp.ravel(leaf) for leaf in leaves])
+        return objective_factor * evaluation.objective + multipliers @ residuals
+
+    gradient = jax.grad(weighted_lagrangian)
+    step = 1e-6
+    finite_differences = np.stack(
+        [
+            (gradient(y.at[i].add(step)) - gradient(y.at[i].add(-step))) / (2 * step)
+            for i in range(y.size)
+        ],
+        axis=1,
+    )
+    hessian = adapted.lagrangian_hessian(np.asarray(y), objective_factor, multipliers)
+    np.testing.assert_allclose(hessian, finite_differences, rtol=1e-4, atol=1e-5)

@@ -219,7 +219,11 @@ class _CachedDerivatives:
             return objective_factor * objective + multipliers @ residuals
 
         self._values = jax.jit(flat_values)
-        self._lagrangian_hessian = jax.jit(jax.hessian(flat_lagrangian))
+        self._lagrangian_hessian = (
+            problem.lagrangian_hessian
+            if problem.lagrangian_hessian is not None
+            else jax.jit(jax.hessian(flat_lagrangian))
+        )
         self._derivatives = jax.jit(
             lambda y: (flat_values(y), jax.jacfwd(flat_values)(y))
         )

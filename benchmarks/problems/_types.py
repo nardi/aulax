@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -22,5 +23,14 @@ class BenchmarkProblem:
     """The known minimizer, shaped like `y0`, if there is one and it is unique."""
     objective: float | None = None
     """The known optimal objective value."""
+    lagrangian_hessian: Callable[[np.ndarray, float, np.ndarray], np.ndarray] | None = (
+        None
+    )
+    """The Hessian of the Lagrangian, for problems JAX cannot differentiate twice.
+
+    It is called with the flat variables, the objective factor and one multiplier
+    per flat residual, equality residuals first, in the order of `jax.tree.leaves`.
+    Solvers that need Hessians use it instead of `jax.hessian` when it is set.
+    """
     tags: frozenset[str] = field(default_factory=frozenset)
     """Labels for grouping results, like `"equality"` or `"bounds"`."""

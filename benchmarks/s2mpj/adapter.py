@@ -19,6 +19,7 @@ from ..problems import BenchmarkProblem
 from .problems import (
     ConstraintMapping,
     S2mpjProblem,
+    has_objective,
     known_objective,
     load_problem,
     objective_and_gradient,
@@ -54,6 +55,60 @@ def _values_and_derivatives(problem: S2mpjProblem, has_constraints: bool):
         return objective, gradient, constraints, jacobian
 
     return values, derivatives
+
+
+def _lagrangian_hessian(problem: S2mpjProblem, mapping: ConstraintMapping):
+    """Return the Hessian of the Lagrangian over the mapped residuals.
+
+    The multipliers come in the order of the flattened residuals. The equality
+    residuals are `constraints` then `fixed_variables`, and the inequality
+    residuals are `constraints_lower`, `constraints_upper`, `lower_bounds` and
+    `upper_bounds`, as `jax.tree.leaves` sorts dictionary keys. Only the
+    constraint residuals are nonlinear. A residual $c_l - c$ contributes with a
+    negative sign, the others with a positive one.
+    """
+    size = int(problem.n)
+    constraint_count = int(getattr(problem, "m", 0))
+    equality_count = mapping.equality.size + mapping.fixed.size
+    lower_start = equality_count
+    upper_start = lower_start + mapping.lower.size
+
+    def lagrangian_hessian(
+        x: np.ndarray, objective_factor: float, multipliers: np.ndarray
+    ) -> np.ndarray:
+        column = np.asarray(x, dtype=float).reshape(size, 1)
+        constraint_multipliers = np.zeros(constraint_count)
+        constraint_multipliers[mapping.equality] += multipliers[: mapping.equality.size]
+        constraint_multipliers[mapping.lower] -= multipliers[lower_start:upper_start]
+        constraint_multipliers[mapping.upper] += multipliers[
+            upper_start : upper_start + mapping.upper.size
+        ]
+        if not has_objective(problem):
+            objective_factor = 0.0
+        # `LgHxy` returns the Hessian of f + y'c. Scaling y by the objective
+        # factor gives the Hessian of the weighted Lagrangian in one call.
+        if objective_factor != 0.0:
+            _, _, hessian = problem.LgHxy(
+                column, constraint_multipliers / objective_factor
+            )
+            hessian = objective_factor * _dense(hessian)
+        elif has_objective(problem):
+            _, _, full = problem.LgHxy(column, constraint_multipliers)
+            _, _, objective_hessian = problem.fgHx(column)
+            hessian = _dense(full) - _dense(objective_hessian)
+        else:
+            _, _, hessian = problem.LgHxy(column, constraint_multipliers)
+            hessian = _dense(hessian)
+        return hessian.reshape(size, size)
+
+    return lagrangian_hessian
+
+
+def _dense(matrix) -> np.ndarray:
+    """Return a SciPy sparse matrix or an array as a dense float array."""
+    if hasattr(matrix, "toarray"):
+        matrix = matrix.toarray()
+    return np.asarray(matrix, dtype=float)
 
 
 def adapted_problem(name: str, *arguments: object) -> BenchmarkProblem:
@@ -99,5 +154,6 @@ def adapted_problem(name: str, *arguments: object) -> BenchmarkProblem:
         problem=s2mpj_problem,
         y0=np.asarray(problem.x0, dtype=float).ravel(),
         objective=known_objective(name),
+        lagrangian_hessian=_lagrangian_hessian(problem, mapping),
         tags=frozenset({"s2mpj"}),
     )
