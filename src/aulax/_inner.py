@@ -4,7 +4,7 @@ import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Bool, PyTree, Scalar
 
-from ._misc import tree_max_norm
+from ._misc import tree_max_norm, tree_where
 from ._problem import Evaluation
 
 
@@ -25,6 +25,25 @@ class InnerStateAccess(Protocol):
         """Return the gradient of the augmented Lagrangian there, or `None`."""
         ...
 
+    def transfer_state(
+        self,
+        old_state: PyTree,
+        new_state: PyTree,
+        penalty_increased: Bool[Array, ""],
+    ) -> PyTree:
+        """Return the inner state to continue with after an outer update.
+
+        `new_state` is a fresh state for the new augmented Lagrangian, and
+        `old_state` is the state at the end of the previous inner solve. The
+        result may carry information over from `old_state`, such as a Hessian
+        approximation.
+        """
+        ...
+
+
+HESSIAN_REUSE_OPTIONS = ("reset", "keep", "keep_unless_penalty_increased")
+"""The choices for `OptimistixStateAccess.hessian_reuse`."""
+
 
 class OptimistixStateAccess(eqx.Module):
     """Reads the state of the optimistix gradient-based minimisers.
@@ -34,7 +53,29 @@ class OptimistixStateAccess(eqx.Module):
     `f_info.grad`. Other minimisers, like `OptaxMinimiser`, have neither, and
     both methods return `None` for them. Whether the fields exist is decided
     when the solve is traced, so this adds no work to the compiled loop.
+
+    The quasi-Newton minimisers also keep a Hessian approximation, in
+    `f_info.hessian` or `f_info.hessian_inv`, and for `LBFGS` in the history of
+    `hessian_update_state`. `hessian_reuse` decides whether a new inner solve
+    starts from it or from the identity.
     """
+
+    hessian_reuse: str = eqx.field(default="reset", static=True)
+    """Whether a new inner solve starts from the previous Hessian approximation.
+
+    `"reset"` starts from the identity. `"keep"` always starts from the previous
+    approximation. A multiplier update only changes the Hessian of the augmented
+    Lagrangian through the constraint curvature, but a penalty increase adds a
+    large term that the old approximation lacks. `"keep_unless_penalty_increased"`
+    therefore resets after a penalty increase.
+    """
+
+    def __check_init__(self):
+        if self.hessian_reuse not in HESSIAN_REUSE_OPTIONS:
+            raise ValueError(
+                f"`hessian_reuse` must be one of {HESSIAN_REUSE_OPTIONS}, "
+                f"not {self.hessian_reuse!r}."
+            )
 
     def accepted_evaluation(self, inner_state: PyTree) -> Evaluation | None:
         """Return the `aux` field of the state, if it holds an `Evaluation`."""
@@ -45,6 +86,47 @@ class OptimistixStateAccess(eqx.Module):
         """Return `f_info.grad` of the state, if it has one."""
         function_info = getattr(inner_state, "f_info", None)
         return getattr(function_info, "grad", None)
+
+    def transfer_state(
+        self,
+        old_state: PyTree,
+        new_state: PyTree,
+        penalty_increased: Bool[Array, ""],
+    ) -> PyTree:
+        """Copy the Hessian approximation into `new_state`, if `hessian_reuse` says so.
+
+        The copy survives the first step of the new inner solve. That step
+        accepts the starting point without moving, so the quasi-Newton update
+        sees no change in `y` and leaves the approximation as it is.
+        """
+        if self.hessian_reuse == "reset":
+            return new_state
+        function_info = getattr(new_state, "f_info", None)
+        names = [
+            name
+            for name in ("hessian", "hessian_inv")
+            if getattr(function_info, name, None) is not None
+        ]
+        if not names:
+            return new_state
+        name = names[0]
+        copied = eqx.tree_at(
+            lambda state: getattr(state.f_info, name),
+            new_state,
+            getattr(old_state.f_info, name),
+        )
+        if getattr(new_state, "hessian_update_state", None) is not None:
+            copied = eqx.tree_at(
+                lambda state: state.hessian_update_state,
+                copied,
+                old_state.hessian_update_state,
+            )
+        if self.hessian_reuse == "keep":
+            return copied
+        dynamic_copied, static = eqx.partition(copied, eqx.is_array)
+        dynamic_new, _ = eqx.partition(new_state, eqx.is_array)
+        dynamic = tree_where(penalty_increased, dynamic_new, dynamic_copied)
+        return eqx.combine(dynamic, static)
 
 
 class InnerStoppingRule(Protocol):

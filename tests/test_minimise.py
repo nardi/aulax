@@ -186,3 +186,27 @@ def test_gradient_stopping_reaches_stationarity():
     shift = point[positive] - solution.value[positive]
     np.testing.assert_allclose(shift, shift[0], atol=1e-6)
     assert solution.stats.stationarity < 1e-4
+
+
+@pytest.mark.parametrize("hessian_reuse", ["keep", "keep_unless_penalty_increased"])
+@pytest.mark.parametrize(
+    "inner",
+    [optx.BFGS(rtol=1e-10, atol=1e-10), optx.LBFGS(rtol=1e-10, atol=1e-10)],
+    ids=["bfgs", "lbfgs"],
+)
+def test_hessian_reuse_keeps_solution(hessian_reuse, inner):
+    def solver_with(reuse):
+        return alx.AugmentedLagrangian(
+            inner=inner,
+            inner_state_access=alx.OptimistixStateAccess(hessian_reuse=reuse),
+        )
+
+    y0 = jnp.array([0.5, 0.5, 0.5])
+    reset = alx.minimise(hs35, solver_with("reset"), y0)
+    reused = alx.minimise(hs35, solver_with(hessian_reuse), y0)
+    np.testing.assert_allclose(reused.value, reset.value, atol=1e-6)
+
+
+def test_hessian_reuse_rejects_unknown_option():
+    with pytest.raises(ValueError, match="hessian_reuse"):
+        alx.OptimistixStateAccess(hessian_reuse="sometimes")

@@ -14,7 +14,7 @@ from ._lagrangian import (
     lagrangian,
     penalty_infeasibility,
 )
-from ._misc import tree_full_like, tree_max_norm, tree_where
+from ._misc import tree_any, tree_full_like, tree_max_norm, tree_where
 from ._problem import Args, Aux, Constraints, Evaluation, ProblemFunction, State, Y
 from ._solution import RESULTS, Solution, Statistics
 from ._solver import AugmentedLagrangian
@@ -282,9 +282,22 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         new_inner_args = _InnerArgs(
             args, evaluation.state, new_multipliers, new_penalty
         )
+        fresh_inner_state = eqx.combine(
+            reinitialize_inner_state(loop.y, new_inner_args), static_inner_state
+        )
+        transferred_inner_state = solver.inner_state_access.transfer_state(
+            eqx.combine(loop.inner_state, static_inner_state),
+            fresh_inner_state,
+            tree_any(
+                jax.tree.map(jnp.greater, new_penalty, loop.penalty),
+            ),
+        )
+        new_dynamic_inner_state, _ = eqx.partition(
+            transferred_inner_state, eqx.is_array
+        )
         return _LoopState(
             y=loop.y,
-            inner_state=reinitialize_inner_state(loop.y, new_inner_args),
+            inner_state=new_dynamic_inner_state,
             evaluation=evaluation,
             multipliers=new_multipliers,
             multiplier_estimates=estimates,
