@@ -80,12 +80,15 @@ def run_in_processes(
     argument_tuples: Iterable[tuple],
     timeout: float,
     workers: int,
+    on_outcome: Callable[[int, ProcessOutcome[Result]], None] | None = None,
 ) -> list[ProcessOutcome[Result]]:
     """Call `function` once per argument tuple, each in its own process.
 
     Up to `workers` processes run at a time. A process that exceeds `timeout`
     seconds is terminated. The outcomes come back in the order of the arguments.
-    `function` has to be importable by name, since processes start with `spawn`.
+    `on_outcome`, if given, is called with the index and outcome of each process
+    as soon as it finishes, so callers can save progress. `function` has to be
+    importable by name, since processes start with `spawn`.
     """
     context = multiprocessing.get_context("spawn")
     pending = list(enumerate(argument_tuples))
@@ -108,5 +111,7 @@ def run_in_processes(
                 still_running.append(entry)
             else:
                 outcomes[entry.index] = outcome
+                if on_outcome is not None:
+                    on_outcome(entry.index, outcome)
         running = still_running
     return [outcomes[index] for index in range(total)]
