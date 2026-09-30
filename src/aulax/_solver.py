@@ -1,8 +1,16 @@
+import math
+
 import equinox as eqx
 import jax.numpy as jnp
 import optimistix as optx
 from jaxtyping import ArrayLike, Bool, DTypeLike, Scalar
 
+from ._inner import (
+    InnerStateAccess,
+    InnerStoppingRule,
+    MinimiserStopping,
+    OptimistixStateAccess,
+)
 from ._misc import dtype_default
 from ._updates import (
     AlgencanPenaltyUpdate,
@@ -44,6 +52,23 @@ class AugmentedLagrangian(eqx.Module):
     """The rule that sets and grows the penalty."""
     tolerance_schedule: ToleranceSchedule = GeometricToleranceSchedule()
     """The rule that sets the tolerance of each inner solve."""
+    stationarity_tolerance: float = math.inf
+    r"""The bound on the gradient of the Lagrangian at the solution.
+
+    The solve only stops when the largest element of $\nabla_y L$ is at most this
+    tolerance times the largest element of the objective gradient at `y0`, or
+    one if that is smaller. This check needs the gradient from the inner solver,
+    see `inner_state_access`. The default of infinity turns it off.
+    """
+    inner_stopping: InnerStoppingRule = MinimiserStopping()
+    """The rule that decides when an inner solve is finished."""
+    inner_state_access: InnerStateAccess = OptimistixStateAccess()
+    """Reads the evaluation and gradient at the accepted point of the inner solver.
+
+    With the evaluation, the multipliers update as soon as an inner solve ends.
+    Without it, the solver takes one more inner step to learn the constraint
+    values at the inner solution.
+    """
     inner_max_steps: int = 256
     """The number of steps after which an inner solve counts as finished.
 

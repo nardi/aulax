@@ -5,6 +5,13 @@ The conventional import style is `import aulax as alx`.
 
 import importlib.metadata
 
+from ._inner import (
+    GradientStopping as GradientStopping,
+    InnerStateAccess as InnerStateAccess,
+    InnerStoppingRule as InnerStoppingRule,
+    MinimiserStopping as MinimiserStopping,
+    OptimistixStateAccess as OptimistixStateAccess,
+)
 from ._minimise import minimise as minimise
 from ._problem import (
     Constraints as Constraints,

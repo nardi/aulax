@@ -140,7 +140,19 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         inputs
     )
     tags = frozenset()
-    evaluation0 = problem(y0, args, state)
+
+    def objective_with_evaluation(y: Y) -> tuple[Scalar, Evaluation]:
+        evaluation = problem(y, args, state)
+        return evaluation.objective, evaluation
+
+    # The first evaluation also computes the objective gradient, whose size sets
+    # the scale of the gradient-based stopping tests.
+    objective_gradient, evaluation0 = jax.grad(objective_with_evaluation, has_aux=True)(
+        y0
+    )
+    gradient_scale = jax.lax.stop_gradient(
+        jnp.maximum(1.0, tree_max_norm(objective_gradient))
+    )
     objective = jnp.asarray(evaluation0.objective)
 
     if multipliers is None:
@@ -174,8 +186,12 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         dynamic_state, _ = eqx.partition(new_state, eqx.is_array)
         return dynamic_state
 
-    def inner_step(loop: _LoopState) -> _LoopState:
-        """Take one inner step, and mark the inner solve finished if it has."""
+    def inner_step(loop: _LoopState) -> tuple[_LoopState, PyTree]:
+        """Take one inner step, and mark the inner solve finished if it has.
+
+        Returns the new loop state and the full new inner solver state, whose
+        accepted evaluation and gradient the outer update may use.
+        """
         inner = solver.inner_at_tolerance(loop.inner_tolerance)
         inner_args = _InnerArgs(
             args, loop.evaluation.state, loop.multipliers, loop.penalty
@@ -189,12 +205,18 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         )
         new_dynamic_inner_state, _ = eqx.partition(new_inner_state, eqx.is_array)
         inner_steps = loop.inner_steps + 1
+        inner_converged = solver.inner_stopping.is_inner_converged(
+            solver.inner_state_access.accepted_gradient(new_inner_state),
+            loop.inner_tolerance,
+            gradient_scale,
+            inner_terminate,
+        )
         result = RESULTS.where(
             _tree_all_finite(new_y),
             RESULTS.promote(inner_result),
             RESULTS.nonfinite,  # ty: ignore[invalid-argument-type]
         )
-        return eqx.tree_at(
+        stepped = eqx.tree_at(
             lambda loop: (
                 loop.y,
                 loop.inner_state,
@@ -209,13 +231,22 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
                 new_dynamic_inner_state,
                 evaluation,
                 inner_steps,
-                inner_terminate | (inner_steps >= solver.inner_max_steps),
+                inner_converged | (inner_steps >= solver.inner_max_steps),
                 result,
             ),
         )
+        return stepped, new_inner_state
 
-    def outer_update(loop: _LoopState, evaluation: Evaluation) -> _LoopState:
-        """Update multipliers and penalty from the inner solution, and restart."""
+    def outer_update(
+        loop: _LoopState, evaluation: Evaluation, gradient: PyTree[Array] | None
+    ) -> _LoopState:
+        """Update multipliers and penalty from the inner solution, and restart.
+
+        `evaluation` belongs to `loop.y`, the inner solution. `gradient` is the
+        gradient of the augmented Lagrangian there, if the inner solver provides
+        it. It equals the gradient of the Lagrangian with the new multiplier
+        estimates, so its size measures stationarity.
+        """
         estimates = solver.multiplier_update.update_multipliers(
             loop.multipliers, loop.penalty, evaluation
         )
@@ -228,9 +259,20 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         new_multipliers = solver.multiplier_update.safeguard_multipliers(
             estimates, evaluation
         )
-        converged = solver.is_final_tolerance(loop.inner_tolerance) & (
-            kkt_infeasibility(evaluation, estimates)
-            <= solver.feasibility_tolerance_for(objective.dtype)
+        if gradient is None:
+            stationary = jnp.array(True)
+        else:
+            stationary = (
+                tree_max_norm(gradient)
+                <= solver.stationarity_tolerance * gradient_scale
+            )
+        converged = (
+            solver.is_final_tolerance(loop.inner_tolerance)
+            & (
+                kkt_infeasibility(evaluation, estimates)
+                <= solver.feasibility_tolerance_for(objective.dtype)
+            )
+            & stationary
         )
         infeasible = penalty_stalled & jnp.invert(converged)
         new_tolerance = jnp.maximum(
@@ -260,14 +302,22 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     def body(loop: _LoopState) -> _LoopState:
         """Run one loop iteration, which always calls the inner `step` once.
 
-        The inner solver returns the evaluation of the point that went into
-        `step`. After the inner solve finishes at a point, the next iteration
-        steps from that point to obtain its evaluation, updates the multipliers
-        from it, and discards the step itself.
+        When the inner solver state holds the evaluation at its accepted point,
+        the multipliers update in the same iteration that the inner solve ends.
+        Otherwise the loop only has the evaluation of the point that went into
+        `step`. It then steps once more from the inner solution to obtain its
+        evaluation, updates the multipliers from it, and discards that step.
         """
-        stepped = inner_step(loop)
-        updated = outer_update(loop, stepped.evaluation)
-        new_loop = tree_where(loop.update_pending, updated, stepped)
+        stepped, new_inner_state = inner_step(loop)
+        accepted = solver.inner_state_access.accepted_evaluation(new_inner_state)
+        if accepted is None:
+            updated = outer_update(loop, stepped.evaluation, None)
+            new_loop = tree_where(loop.update_pending, updated, stepped)
+        else:
+            gradient = solver.inner_state_access.accepted_gradient(new_inner_state)
+            stepped = eqx.tree_at(lambda loop: loop.evaluation, stepped, accepted)
+            updated = outer_update(stepped, accepted, gradient)
+            new_loop = tree_where(stepped.update_pending, updated, stepped)
         return eqx.tree_at(lambda loop: loop.num_steps, new_loop, loop.num_steps + 1)
 
     def keep_going(loop: _LoopState) -> Bool[Array, ""]:

@@ -139,3 +139,50 @@ def test_float32_solve():
     assert solution.value.dtype == jnp.float32
     assert solution.multipliers.equality.dtype == jnp.float32
     np.testing.assert_allclose(solution.value, [0.5, -0.5, 0.5], atol=1e-3)
+
+
+class _NoInnerStateAccess(alx.OptimistixStateAccess):
+    """Hides the inner solver state, which forces the delayed outer update."""
+
+    def accepted_evaluation(self, inner_state):
+        return None
+
+    def accepted_gradient(self, inner_state):
+        return None
+
+
+def test_immediate_outer_update_matches_delayed_update():
+    delayed_solver = alx.AugmentedLagrangian(
+        inner=optx.BFGS(rtol=1e-10, atol=1e-10),
+        inner_state_access=_NoInnerStateAccess(),
+    )
+    y0 = jnp.array([0.5, 0.5, 0.5])
+    delayed = alx.minimise(hs35, delayed_solver, y0)
+    immediate = alx.minimise(hs35, SOLVER, y0)
+    np.testing.assert_allclose(immediate.value, delayed.value, atol=1e-8)
+    # The delayed update spends one extra step per outer iteration.
+    assert immediate.stats.num_steps < delayed.stats.num_steps
+
+
+def test_gradient_stopping_reaches_stationarity():
+    def simplex_projection(y, args, state):
+        return alx.Evaluation(
+            objective=jnp.sum((y - args) ** 2),
+            equality=jnp.sum(y) - 1.0,
+            inequality=-y,
+        )
+
+    point = jnp.linspace(-1.0, 1.0, 100)
+    solver = alx.AugmentedLagrangian(
+        inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+        inner_stopping=alx.GradientStopping(),
+        stationarity_tolerance=1e-6,
+    )
+    solution = alx.minimise(
+        simplex_projection, solver, jnp.full(100, 0.01), point, max_steps=10_000
+    )
+    # The projection subtracts a common shift from `point` and clips at zero.
+    positive = solution.value > 1e-6
+    shift = point[positive] - solution.value[positive]
+    np.testing.assert_allclose(shift, shift[0], atol=1e-6)
+    assert solution.stats.stationarity < 1e-4
