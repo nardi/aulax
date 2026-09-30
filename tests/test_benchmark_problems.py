@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from benchmarks.metrics import classify_outcome, constraint_violation
-from benchmarks.problems import PROBLEM_SETS, BenchmarkProblem
+from benchmarks.problem_sets import PROBLEM_SETS, ListedProblemSet
+from benchmarks.problems import BenchmarkProblem
 from benchmarks.records import (
     SolveRecord,
     new_result_file,
@@ -16,8 +17,10 @@ from benchmarks.records import (
 ALL_PROBLEMS = [
     pytest.param(problem, id=f"{set_name}-{problem.name}")
     for set_name, problem_set in PROBLEM_SETS.items()
-    for problem in problem_set()
+    if isinstance(problem_set, ListedProblemSet)
+    for problem in problem_set.problems()
 ]
+"""Every handwritten problem. The S2MPJ problems have their own checks."""
 
 
 @pytest.mark.parametrize("problem", ALL_PROBLEMS)
