@@ -91,14 +91,18 @@ def _skipped_record(problem: BenchmarkProblem, reason: str) -> SolveRecord:
     )
 
 
-def _best_time(function: Callable[[], object], repeats: int) -> float:
-    """Return the fastest of `repeats` calls of `function`, in seconds."""
+def _best_time(function: Callable[[], object], repeats: int) -> float | None:
+    """Return the fastest of `repeats` calls of `function`, in seconds.
+
+    Returns `None` for zero repeats, which skips timing for problem sets where
+    time means little, such as S2MPJ problems evaluated through callbacks.
+    """
     times = []
     for _ in range(repeats):
         start = time.perf_counter()
         function()
         times.append(time.perf_counter() - start)
-    return min(times)
+    return min(times, default=None)
 
 
 @dataclass(frozen=True)
