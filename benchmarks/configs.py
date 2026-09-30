@@ -494,6 +494,41 @@ _CONFIGURATION_LIST: list[Configuration] = [
         description="The default solver with BFGS inner solves.",
         solver=alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-8, atol=1e-8)),
     ),
+    AulaxConfiguration(
+        name="gradient_relative",
+        description="Inner solves stop on the gradient, relative to its scale.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-6,
+        ),
+    ),
+    AulaxConfiguration(
+        name="gradient_relative_loose",
+        description="Relative gradient stopping with a looser stationarity check.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+        ),
+    ),
+    AulaxConfiguration(
+        name="gradient_absolute",
+        description="Inner solves stop on the absolute size of the gradient.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(relative=False),
+            stationarity_tolerance=1e-6,
+        ),
+    ),
+    AulaxConfiguration(
+        name="minimiser_stationarity",
+        description="The minimiser's own stopping test with a stationarity check.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            stationarity_tolerance=1e-4,
+        ),
+    ),
     ScipyConfiguration(
         name="scipy_slsqp",
         description="SciPy's SLSQP.",
