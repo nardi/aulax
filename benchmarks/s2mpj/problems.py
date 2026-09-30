@@ -49,6 +49,37 @@ def known_objective(name: str) -> float | None:
         return None
 
 
+def has_objective(problem: S2mpjProblem) -> bool:
+    """Return whether the problem defines an objective.
+
+    Feasibility problems have the objective type `N` in their classification.
+    S2MPJ prints an error and returns `None` when asked for their objective,
+    so callers use `objective_value` and `objective_and_gradient` instead,
+    which treat a missing objective as zero.
+    """
+    return str(problem.pbclass).split("-")[1][1] != "N"
+
+
+def objective_value(problem: S2mpjProblem, column: np.ndarray) -> float:
+    """Return the objective at the column vector `column`, or zero if there is none."""
+    if not has_objective(problem):
+        return 0.0
+    return float(np.asarray(problem.fx(column), dtype=float).ravel()[0])
+
+
+def objective_and_gradient(
+    problem: S2mpjProblem, column: np.ndarray
+) -> tuple[float, np.ndarray]:
+    """Return the objective and its gradient, or zeros if there is no objective."""
+    if not has_objective(problem):
+        return 0.0, np.zeros(column.size)
+    objective, gradient = problem.fgx(column)
+    return (
+        float(np.asarray(objective, dtype=float).ravel()[0]),
+        np.asarray(gradient, dtype=float).ravel(),
+    )
+
+
 def _column(array: np.ndarray | None, size: int) -> np.ndarray:
     """Return `array` as a flat float array, or an empty one if it is missing."""
     if array is None or size == 0:
@@ -140,7 +171,7 @@ def evaluate_numpy(
 ) -> tuple[float, dict[str, np.ndarray], dict[str, np.ndarray]]:
     """Return the objective and the mapped residuals at `x`, using S2MPJ directly."""
     column = np.asarray(x, dtype=float).reshape(-1, 1)
-    objective = float(np.asarray(problem.fx(column)).ravel()[0])
+    objective = objective_value(problem, column)
     if int(getattr(problem, "m", 0)) > 0:
         c = np.asarray(problem.cx(column), dtype=float).ravel()
     else:

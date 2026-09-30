@@ -16,7 +16,14 @@ import numpy as np
 import aulax as alx
 
 from ..problems import BenchmarkProblem
-from .problems import ConstraintMapping, S2mpjProblem, known_objective, load_problem
+from .problems import (
+    ConstraintMapping,
+    S2mpjProblem,
+    known_objective,
+    load_problem,
+    objective_and_gradient,
+    objective_value,
+)
 
 
 def _values_and_derivatives(problem: S2mpjProblem, has_constraints: bool):
@@ -25,7 +32,7 @@ def _values_and_derivatives(problem: S2mpjProblem, has_constraints: bool):
 
     def values(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         column = np.asarray(x, dtype=float).reshape(size, 1)
-        objective = np.asarray(problem.fx(column), dtype=float).reshape(())
+        objective = np.asarray(objective_value(problem, column))
         if not has_constraints:
             return objective, np.zeros(0)
         constraints = np.asarray(problem.cx(column), dtype=float).ravel()
@@ -35,9 +42,8 @@ def _values_and_derivatives(problem: S2mpjProblem, has_constraints: bool):
         x: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         column = np.asarray(x, dtype=float).reshape(size, 1)
-        objective, gradient = problem.fgx(column)
-        objective = np.asarray(objective, dtype=float).reshape(())
-        gradient = np.asarray(gradient, dtype=float).ravel()
+        value, gradient = objective_and_gradient(problem, column)
+        objective = np.asarray(value)
         if not has_constraints:
             return objective, gradient, np.zeros(0), np.zeros((0, size))
         constraints, jacobian = problem.cJx(column)

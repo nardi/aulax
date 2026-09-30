@@ -1,0 +1,5530 @@
+{
+  "s2mpj_commit": "fea6a70048eaad28b13a08703ddbfdbf65cd9c30",
+  "selected": [
+    {
+      "name": "ACOPP14",
+      "classification": "C-CQOR2-AY-38-68",
+      "variables": 38,
+      "constraints": 68,
+      "subset": "general"
+    },
+    {
+      "name": "ACOPR14",
+      "classification": "C-CQOR2-AN-38-82",
+      "variables": 38,
+      "constraints": 82,
+      "subset": "general"
+    },
+    {
+      "name": "AIRCRFTA",
+      "classification": "C-CNOR2-RN-8-5",
+      "variables": 8,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "ALJAZZAF",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 10,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "ALLINIT",
+      "classification": "C-COBR2-AY-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "ALLINITA",
+      "classification": "C-COOR2-AY-4-4",
+      "variables": 4,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "ALLINITC",
+      "classification": "C-COOR2-AY-4-1",
+      "variables": 4,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "ALSOTAME",
+      "classification": "C-COOR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "ARGAUSS",
+      "classification": "C-CNOR2-AN-3-15",
+      "variables": 3,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "ARGLALE",
+      "classification": "C-CNLR2-AN-V-V",
+      "variables": 4,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "ARGLBLE",
+      "classification": "C-CNLR2-AN-V-V",
+      "variables": 4,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "ARGTRIG",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "ARTIF",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 12,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "AVGASA",
+      "classification": "C-CQLR2-AN-8-10",
+      "variables": 8,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "AVGASB",
+      "classification": "C-CQLR2-AN-8-10",
+      "variables": 8,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "AVION2",
+      "classification": "C-COLR2-RN-49-15",
+      "variables": 49,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "BARDNE",
+      "classification": "C-CNOR2-AN-3-15",
+      "variables": 3,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "BATCH",
+      "classification": "C-COOR2-AN-46-73",
+      "variables": 48,
+      "constraints": 73,
+      "subset": "general"
+    },
+    {
+      "name": "BEALENE",
+      "classification": "C-CNOR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "BIGGS6NE",
+      "classification": "C-CNOR2-AN-6-13",
+      "variables": 6,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "BIGGSB1",
+      "classification": "C-CQBR2-AN-V-V",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "BIGGSC4",
+      "classification": "C-CQLR2-AN-4-7",
+      "variables": 4,
+      "constraints": 7,
+      "subset": "general"
+    },
+    {
+      "name": "BLOCKQP1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 25,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "BLOCKQP2",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 25,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "BLOCKQP3",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 25,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "BLOWEYA",
+      "classification": "C-CQLR2-MN-V-V",
+      "variables": 22,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "BLOWEYB",
+      "classification": "C-CQLR2-MN-V-V",
+      "variables": 22,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "BLOWEYC",
+      "classification": "C-CQLR2-MN-V-V",
+      "variables": 22,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "BOOTH",
+      "classification": "C-CNLR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BOXBOD",
+      "classification": "C-CNOR2-MN-2-6",
+      "variables": 2,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "BQP1VAR",
+      "classification": "C-CQBR2-AN-1-0",
+      "variables": 1,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "BQPGABIM",
+      "classification": "C-CQBR2-AN-50-0",
+      "variables": 50,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "BQPGASIM",
+      "classification": "C-CQBR2-AN-50-0",
+      "variables": 50,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "BRANIN",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "BRATU2D",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 49,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "BRATU2DT",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 49,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "BRATU3D",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 27,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "BROWNBSNE",
+      "classification": "C-CNOR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "BROWNDENE",
+      "classification": "C-CNOR2-AN-4-20",
+      "variables": 4,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "BROYDN3D",
+      "classification": "C-CNQR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "BT1",
+      "classification": "C-CQQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "BT10",
+      "classification": "C-CLOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BT11",
+      "classification": "C-COOR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "BT12",
+      "classification": "C-CQQR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "BT13",
+      "classification": "C-CLQR2-AY-5-1",
+      "variables": 5,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "BT2",
+      "classification": "C-CQQR2-AY-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "BT3",
+      "classification": "C-CSLR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "BT4",
+      "classification": "C-CQQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BT5",
+      "classification": "C-CQQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BT6",
+      "classification": "C-COOR2-AY-5-2",
+      "variables": 5,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BT7",
+      "classification": "C-COQR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "BT8",
+      "classification": "C-CQQR2-AN-5-2",
+      "variables": 5,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BT9",
+      "classification": "C-CLOR2-AN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "BURKEHAN",
+      "classification": "C-CQOR2-AN-1-1",
+      "variables": 1,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "BYRDSPHR",
+      "classification": "C-CLQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "CAMEL6",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "CAMSHAPE",
+      "classification": "C-CLOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "CANTILVR",
+      "classification": "C-CLOR2-MN-5-1",
+      "variables": 5,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "CATENARY",
+      "classification": "C-CLQR2-AY-V-V",
+      "variables": 15,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "CATMIX",
+      "classification": "C-COOR2-AN-V-V",
+      "variables": 33,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "CB2",
+      "classification": "C-CLOR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "CB3",
+      "classification": "C-CLOR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "CBRATU2D",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 32,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "CBRATU3D",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 54,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "CHACONN1",
+      "classification": "C-CLOR2-AY-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "CHACONN2",
+      "classification": "C-CLOR2-AY-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "CHANDHEQ",
+      "classification": "C-CNOR2-RN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "CHARDIS0",
+      "classification": "C-COBR2-AY-V-V",
+      "variables": 40,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "CHARDIS02",
+      "classification": "C-COBR2-AY-V-V",
+      "variables": 40,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "CHARDIS1",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 40,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "CHARDIS12",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 40,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "CHEBYQAD",
+      "classification": "C-CSBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "CHEMRCTA",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "CHENHARK",
+      "classification": "C-CQBR2-AN-V-V",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "CHWIRUT2",
+      "classification": "C-CNOR2-MN-3-54",
+      "variables": 3,
+      "constraints": 54,
+      "subset": "general"
+    },
+    {
+      "name": "CLNLBEAM",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 33,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "CLUSTER",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "CONCON",
+      "classification": "C-CLOI2-MN-15-11",
+      "variables": 15,
+      "constraints": 11,
+      "subset": "irregular"
+    },
+    {
+      "name": "CONGIGMZ",
+      "classification": "C-CLQR2-AN-3-5",
+      "variables": 3,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "COOLHANS",
+      "classification": "C-CNQR2-RN-9-9",
+      "variables": 9,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "CORE1",
+      "classification": "C-CLQI2-RN-65-59",
+      "variables": 65,
+      "constraints": 59,
+      "subset": "irregular"
+    },
+    {
+      "name": "CORKSCRW",
+      "classification": "C-CSOR2-AN-V-V",
+      "variables": 96,
+      "constraints": 70,
+      "subset": "general"
+    },
+    {
+      "name": "COSHFUN",
+      "classification": "C-CLOR2-AN-V-V",
+      "variables": 25,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "CRESC4",
+      "classification": "C-COOR2-MY-6-8",
+      "variables": 6,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "CRESC50",
+      "classification": "C-COOR2-MY-6-100",
+      "variables": 6,
+      "constraints": 100,
+      "subset": "general"
+    },
+    {
+      "name": "CSFI1",
+      "classification": "C-CLOR2-RN-5-4",
+      "variables": 5,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "CSFI2",
+      "classification": "C-CLOR2-RN-5-4",
+      "variables": 5,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "CUBENE",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "CVXQP1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 10,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "CYCLIC3",
+      "classification": "C-CNOR2-AN-V-0",
+      "variables": 12,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "CYCLOOCF",
+      "classification": "C-CNQR2-MN-V-V",
+      "variables": 20,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "CYCLOOCT",
+      "classification": "C-CNQR2-MN-V-V",
+      "variables": 24,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "CYCLOOCTLS",
+      "classification": "C-CSBR2-MN-V-0",
+      "variables": 24,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DALLASS",
+      "classification": "C-CONR2-MN-46-31",
+      "variables": 46,
+      "constraints": 31,
+      "subset": "general"
+    },
+    {
+      "name": "DANIWOOD",
+      "classification": "C-CNOR2-MN-2-6",
+      "variables": 2,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "DANWOOD",
+      "classification": "C-CNOR2-MN-2-6",
+      "variables": 2,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "DECONVB",
+      "classification": "C-CSBR2-MN-61-0",
+      "variables": 63,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DECONVBNE",
+      "classification": "C-CNOR2-MN-61-0",
+      "variables": 63,
+      "constraints": 40,
+      "subset": "general"
+    },
+    {
+      "name": "DECONVC",
+      "classification": "C-CSQR2-MN-61-1",
+      "variables": 63,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "DEGDIAG",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 11,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DEGENLPA",
+      "classification": "C-CLLR2-AN-20-15",
+      "variables": 20,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "DEGENLPB",
+      "classification": "C-CLLR2-AN-20-15",
+      "variables": 20,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "DEGTRID",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 11,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DEGTRID2",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 11,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DEMBO7",
+      "classification": "C-CQOR2-MN-16-20",
+      "variables": 16,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "DEMYMALO",
+      "classification": "C-CLQR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "DENSCHNBNE",
+      "classification": "C-CNOR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "DENSCHNDNE",
+      "classification": "C-CNOR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "DENSCHNFNE",
+      "classification": "C-CNOR2-AY-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "DEVGLA1NE",
+      "classification": "C-CNOR2-MN-4-24",
+      "variables": 4,
+      "constraints": 24,
+      "subset": "general"
+    },
+    {
+      "name": "DEVGLA2B",
+      "classification": "C-CSBR2-MN-5-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DEVGLA2NE",
+      "classification": "C-CNOR2-MN-5-16",
+      "variables": 5,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "DGOSPEC",
+      "classification": "C-COBR2-AN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIAGIQB",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIAGIQE",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIAGIQT",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIAGPQB",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIAGPQE",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIAGPQT",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "DIPIGRI",
+      "classification": "C-COOR2-AN-7-4",
+      "variables": 7,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "DISC2",
+      "classification": "C-CLQR2-MY-29-23",
+      "variables": 29,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "DISCS",
+      "classification": "C-CLQR2-MY-36-66",
+      "variables": 36,
+      "constraints": 66,
+      "subset": "general"
+    },
+    {
+      "name": "DIXCHLNG",
+      "classification": "C-CSOR2-AN-10-5",
+      "variables": 10,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "DIXCHLNV",
+      "classification": "C-CSOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "DNIEPER",
+      "classification": "C-CQOR2-MN-61-24",
+      "variables": 61,
+      "constraints": 24,
+      "subset": "general"
+    },
+    {
+      "name": "DRUGDIS",
+      "classification": "C-CLOR2-MN-V-V",
+      "variables": 34,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "DRUGDISE",
+      "classification": "C-CLOR2-MY-V-V",
+      "variables": 63,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC1L",
+      "classification": "C-COLR2-AN-V-V",
+      "variables": 58,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC1NA",
+      "classification": "C-COQR2-AN-V-V",
+      "variables": 58,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC1NB",
+      "classification": "C-COQR2-AN-V-V",
+      "variables": 58,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC1NC",
+      "classification": "C-COQR2-AN-V-V",
+      "variables": 58,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC1ND",
+      "classification": "C-COQR2-AN-V-V",
+      "variables": 58,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC2",
+      "classification": "C-COOR2-AN-V-V",
+      "variables": 58,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC3",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 29,
+      "constraints": 18,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC4",
+      "classification": "C-CQOR2-AN-V-V",
+      "variables": 29,
+      "constraints": 18,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC5",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 19,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "DTOC6",
+      "classification": "C-COOR2-AN-V-V",
+      "variables": 21,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "DUAL4",
+      "classification": "C-CQLR2-MN-75-1",
+      "variables": 75,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "ECKERLE4",
+      "classification": "C-CNOR2-MN-3-35",
+      "variables": 3,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "EG1",
+      "classification": "C-COBR2-AY-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "EGGCRATEB",
+      "classification": "C-CSBR2-MN-4-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "EGGCRATENE",
+      "classification": "C-CNOR2-MN-4-2",
+      "variables": 2,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "EIGENA",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 6,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "EIGENA2",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 6,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "EIGENACO",
+      "classification": "C-CSQR2-AN-V-V",
+      "variables": 6,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "EIGENB",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 6,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "EIGENB2",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 6,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "EIGENBCO",
+      "classification": "C-CSQR2-AN-V-V",
+      "variables": 6,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "EIGMAXA",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "EIGMINA",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "ELATVIDUB",
+      "classification": "C-CSBR2-MN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "ELATVIDUNE",
+      "classification": "C-CNOR2-MN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "ELEC",
+      "classification": "C-COOR2-AN-V-V",
+      "variables": 75,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "ENGVAL2NE",
+      "classification": "C-CNOR2-AN-3-5",
+      "variables": 3,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "ERRINBAR",
+      "classification": "C-CLOR2-MY-18-9",
+      "variables": 18,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "ERRINROSNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 18,
+      "subset": "general"
+    },
+    {
+      "name": "ERRINRSMNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 18,
+      "subset": "general"
+    },
+    {
+      "name": "EXP2B",
+      "classification": "C-CSBR2-MN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "EXP2NE",
+      "classification": "C-CNOR2-MN-2-10",
+      "variables": 2,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "EXPFITA",
+      "classification": "C-COLR2-AN-5-22",
+      "variables": 5,
+      "constraints": 22,
+      "subset": "general"
+    },
+    {
+      "name": "EXPLIN",
+      "classification": "C-COBR2-AN-V-V",
+      "variables": 12,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "EXPLIN2",
+      "classification": "C-COBR2-AN-V-V",
+      "variables": 12,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "EXPQUAD",
+      "classification": "C-COBR2-AN-V-V",
+      "variables": 12,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "EXTRASIM",
+      "classification": "C-CLLR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "EXTROSNBNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "FBRAIN2LS",
+      "classification": "C-CSBR2-AN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "FCCU",
+      "classification": "C-CSLR2-MN-19-8",
+      "variables": 19,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "FLETCHER",
+      "classification": "C-CQOR2-AN-4-4",
+      "variables": 4,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "FLOSP2HH",
+      "classification": "C-CNQR2-MY-V-V",
+      "variables": 27,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "FLOSP2HL",
+      "classification": "C-CNQR2-MY-V-V",
+      "variables": 27,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "FLOSP2HM",
+      "classification": "C-CNQR2-MY-V-V",
+      "variables": 27,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "FLOSP2TH",
+      "classification": "C-CNQR2-MY-V-V",
+      "variables": 27,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "FLOSP2TL",
+      "classification": "C-CNQR2-MY-V-V",
+      "variables": 27,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "FLOSP2TM",
+      "classification": "C-CNQR2-MY-V-V",
+      "variables": 27,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "FLT",
+      "classification": "C-CQOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "FREURONE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 4,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "GENHS28",
+      "classification": "C-CQLR2-AY-10-8",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "GENROSEB",
+      "classification": "C-CSBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "GENROSEBNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 18,
+      "subset": "general"
+    },
+    {
+      "name": "GIGOMEZ1",
+      "classification": "C-CLQR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "GIGOMEZ2",
+      "classification": "C-CLOR2-AY-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "GIGOMEZ3",
+      "classification": "C-CLOR2-AY-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "GILBERT",
+      "classification": "C-CQQR2-AN-V-1",
+      "variables": 10,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "GOFFIN",
+      "classification": "C-CLLR2-AN-51-50",
+      "variables": 51,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "GOTTFR",
+      "classification": "C-CNQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "GOULDQP1",
+      "classification": "C-CQLR2-AN-32-17",
+      "variables": 32,
+      "constraints": 17,
+      "subset": "general"
+    },
+    {
+      "name": "GROWTH",
+      "classification": "C-CNOR2-AN-3-12",
+      "variables": 3,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "GULFNE",
+      "classification": "C-CNOR2-MN-3-99",
+      "variables": 3,
+      "constraints": 99,
+      "subset": "general"
+    },
+    {
+      "name": "HADAMALS",
+      "classification": "C-COBR2-RN-V-V",
+      "variables": 100,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HAGER1",
+      "classification": "C-CSLR2-AN-V-V",
+      "variables": 21,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "HAGER2",
+      "classification": "C-COLR2-AN-V-V",
+      "variables": 21,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "HAGER3",
+      "classification": "C-CSLR2-AY-V-V",
+      "variables": 11,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HAGER4",
+      "classification": "C-COLR2-AN-V-V",
+      "variables": 21,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "HAIFAS",
+      "classification": "C-CLQR2-AN-13-9",
+      "variables": 13,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "HALDMADS",
+      "classification": "C-CLOR2-AN-6-42",
+      "variables": 6,
+      "constraints": 42,
+      "subset": "general"
+    },
+    {
+      "name": "HANGING",
+      "classification": "C-CLQR2-AY-V-V",
+      "variables": 27,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "HARKERP2",
+      "classification": "C-CQBR2-AN-V-V",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HART6",
+      "classification": "C-COBR2-AN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HATFLDA",
+      "classification": "C-CSBR2-AN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HATFLDANE",
+      "classification": "C-CNOR2-AN-4-4",
+      "variables": 4,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDB",
+      "classification": "C-CSBR2-AN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HATFLDBNE",
+      "classification": "C-CNOR2-AN-4-4",
+      "variables": 4,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDC",
+      "classification": "C-CSBR2-AN-25-0",
+      "variables": 25,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HATFLDCNE",
+      "classification": "C-CNOR2-AN-25-25",
+      "variables": 25,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDDNE",
+      "classification": "C-CNOR2-AN-3-10",
+      "variables": 3,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDENE",
+      "classification": "C-CNOR2-AN-3-21",
+      "variables": 3,
+      "constraints": 21,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDF",
+      "classification": "C-CNOR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDFLNE",
+      "classification": "C-CNOR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDG",
+      "classification": "C-CNOR2-AY-25-25",
+      "variables": 25,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "HATFLDH",
+      "classification": "C-CQLR2-AN-4-7",
+      "variables": 4,
+      "constraints": 7,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELBA",
+      "classification": "C-CNLR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELBC",
+      "classification": "C-CNQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELBD",
+      "classification": "C-CNQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELBFNE",
+      "classification": "C-CNOR2-AN-4-7",
+      "variables": 4,
+      "constraints": 7,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELBI",
+      "classification": "C-COLR2-MN-100-12",
+      "variables": 100,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELBK",
+      "classification": "C-CLOR2-MN-24-14",
+      "variables": 24,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELP1",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HIMMELP2",
+      "classification": "C-COQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELP3",
+      "classification": "C-COQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELP4",
+      "classification": "C-COQR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELP5",
+      "classification": "C-COQR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HIMMELP6",
+      "classification": "C-COQR2-AN-2-5",
+      "variables": 2,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HONG",
+      "classification": "C-COLR2-AN-4-1",
+      "variables": 4,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS1",
+      "classification": "C-CSBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS10",
+      "classification": "C-CLQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS100",
+      "classification": "C-COOR2-AN-7-4",
+      "variables": 7,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS100LNP",
+      "classification": "C-COOR2-AN-7-2",
+      "variables": 7,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS100MOD",
+      "classification": "C-COOR2-AN-7-4",
+      "variables": 7,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS101",
+      "classification": "C-COOR2-AN-7-5",
+      "variables": 7,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS102",
+      "classification": "C-COOR2-AN-7-5",
+      "variables": 7,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS103",
+      "classification": "C-COOR2-AN-7-5",
+      "variables": 7,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS104",
+      "classification": "C-COOR2-AN-8-5",
+      "variables": 8,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS105",
+      "classification": "C-COLR2-AY-8-1",
+      "variables": 8,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS106",
+      "classification": "C-CLQR2-MN-8-6",
+      "variables": 8,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "HS107",
+      "classification": "C-COOR2-MY-9-6",
+      "variables": 9,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "HS108",
+      "classification": "C-CQQR2-AY-9-13",
+      "variables": 9,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "HS109",
+      "classification": "C-COOR2-AY-9-10",
+      "variables": 9,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "HS11",
+      "classification": "C-CSQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS111",
+      "classification": "C-COOR2-AN-10-3",
+      "variables": 10,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS113",
+      "classification": "C-CQQR2-AN-10-8",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "HS114",
+      "classification": "C-CQOR2-MY-10-11",
+      "variables": 10,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "HS116",
+      "classification": "C-CLQR2-MN-13-14",
+      "variables": 13,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "HS117",
+      "classification": "C-COQR2-AN-15-5",
+      "variables": 15,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS118",
+      "classification": "C-CQLR2-AN-15-17",
+      "variables": 15,
+      "constraints": 17,
+      "subset": "general"
+    },
+    {
+      "name": "HS119",
+      "classification": "C-COLR2-AN-16-8",
+      "variables": 16,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "HS12",
+      "classification": "C-CQQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS13",
+      "classification": "C-CQOR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS14",
+      "classification": "C-CSQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS15",
+      "classification": "C-CSQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS16",
+      "classification": "C-CSQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS17",
+      "classification": "C-CSQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS18",
+      "classification": "C-CSQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS19",
+      "classification": "C-COQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS1NE",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS2",
+      "classification": "C-CSBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS20",
+      "classification": "C-CSQR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS21",
+      "classification": "C-CQLR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS21MOD",
+      "classification": "C-CSLR2-AN-7-1",
+      "variables": 7,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS22",
+      "classification": "C-CQQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS23",
+      "classification": "C-CQQR2-AN-2-5",
+      "variables": 2,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS24",
+      "classification": "C-COLR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS25",
+      "classification": "C-CSBR2-AN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS25NE",
+      "classification": "C-CNOR2-AN-3-99",
+      "variables": 3,
+      "constraints": 99,
+      "subset": "general"
+    },
+    {
+      "name": "HS26",
+      "classification": "C-COOR2-AY-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS268",
+      "classification": "C-CQLR2-AN-5-5",
+      "variables": 5,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS27",
+      "classification": "C-CSQR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS28",
+      "classification": "C-CSLR2-AY-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS29",
+      "classification": "C-COQR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS2NE",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS3",
+      "classification": "C-CQBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS30",
+      "classification": "C-CQQR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS31",
+      "classification": "C-CQQR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS32",
+      "classification": "C-CSOR2-AY-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS33",
+      "classification": "C-COQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS34",
+      "classification": "C-CLOR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS35",
+      "classification": "C-CQLR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS35I",
+      "classification": "C-CQLR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS35MOD",
+      "classification": "C-CQLR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS36",
+      "classification": "C-COLR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS37",
+      "classification": "C-COLR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS38",
+      "classification": "C-COBR2-AN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS39",
+      "classification": "C-CLOR2-AN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS3MOD",
+      "classification": "C-CQBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS4",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS40",
+      "classification": "C-COOR2-AN-4-3",
+      "variables": 4,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS41",
+      "classification": "C-COLR2-AN-4-1",
+      "variables": 4,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS42",
+      "classification": "C-CSQR2-AN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS43",
+      "classification": "C-CQQR2-AN-4-3",
+      "variables": 4,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS44",
+      "classification": "C-CQLR2-AN-4-6",
+      "variables": 4,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "HS44NEW",
+      "classification": "C-CQLR2-AN-4-6",
+      "variables": 4,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "HS45",
+      "classification": "C-COBR2-AN-5-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS46",
+      "classification": "C-COOR2-AY-5-2",
+      "variables": 5,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS47",
+      "classification": "C-COOR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS48",
+      "classification": "C-CSLR2-AY-5-2",
+      "variables": 5,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS49",
+      "classification": "C-COLR2-AY-5-2",
+      "variables": 5,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS5",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "HS50",
+      "classification": "C-COLR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS51",
+      "classification": "C-CQLR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS52",
+      "classification": "C-CQLR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS53",
+      "classification": "C-CQLR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS54",
+      "classification": "C-COLR2-AN-6-1",
+      "variables": 6,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS55",
+      "classification": "C-COLR2-AN-6-6",
+      "variables": 6,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "HS56",
+      "classification": "C-COOR2-AN-7-4",
+      "variables": 7,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS57",
+      "classification": "C-CSQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS59",
+      "classification": "C-COQR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS6",
+      "classification": "C-CQQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS60",
+      "classification": "C-COOR2-AY-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS61",
+      "classification": "C-CQQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS62",
+      "classification": "C-COLR2-AY-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS63",
+      "classification": "C-CQQR2-AY-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS64",
+      "classification": "C-COOR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS65",
+      "classification": "C-CQQR2-AN-3-1",
+      "variables": 3,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS66",
+      "classification": "C-CLOR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS67",
+      "classification": "C-COOI2-AN-3-14",
+      "variables": 3,
+      "constraints": 14,
+      "subset": "irregular"
+    },
+    {
+      "name": "HS68",
+      "classification": "C-COOR2-MN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS69",
+      "classification": "C-COOR2-MN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS7",
+      "classification": "C-COOR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS70",
+      "classification": "C-CSQR2-MN-4-1",
+      "variables": 4,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS71",
+      "classification": "C-COOR2-AY-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS72",
+      "classification": "C-CLOR2-MN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS73",
+      "classification": "C-CLOR2-MN-4-3",
+      "variables": 4,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS74",
+      "classification": "C-COOR2-AY-4-5",
+      "variables": 4,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS75",
+      "classification": "C-COOR2-AY-4-5",
+      "variables": 4,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "HS76",
+      "classification": "C-CQLR2-AN-4-3",
+      "variables": 4,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS76I",
+      "classification": "C-CQLR2-AN-4-3",
+      "variables": 4,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS77",
+      "classification": "C-COOR2-AY-5-2",
+      "variables": 5,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS78",
+      "classification": "C-COOR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS79",
+      "classification": "C-COOR2-AY-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS8",
+      "classification": "C-CCQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS80",
+      "classification": "C-COOR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS81",
+      "classification": "C-COOR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS83",
+      "classification": "C-CQQR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS84",
+      "classification": "C-CQQR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "HS85",
+      "classification": "C-COOI2-MN-5-21",
+      "variables": 5,
+      "constraints": 21,
+      "subset": "irregular"
+    },
+    {
+      "name": "HS86",
+      "classification": "C-COLR2-AN-5-10",
+      "variables": 5,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "HS87",
+      "classification": "C-COOI2-MN-6-4",
+      "variables": 6,
+      "constraints": 4,
+      "subset": "irregular"
+    },
+    {
+      "name": "HS88",
+      "classification": "C-CQOR2-MN-6-1",
+      "variables": 6,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS89",
+      "classification": "C-CQOR2-MN-6-1",
+      "variables": 6,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS9",
+      "classification": "C-COLR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS90",
+      "classification": "C-CQOR2-MN-6-1",
+      "variables": 6,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS91",
+      "classification": "C-CQOR2-MN-6-1",
+      "variables": 6,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS92",
+      "classification": "C-CQOR2-MN-6-1",
+      "variables": 6,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HS93",
+      "classification": "C-COOR2-MY-6-2",
+      "variables": 6,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS95",
+      "classification": "C-CLQR2-AN-6-4",
+      "variables": 6,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS96",
+      "classification": "C-CLQR2-AN-6-4",
+      "variables": 6,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS97",
+      "classification": "C-CLQR2-AN-6-4",
+      "variables": 6,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS98",
+      "classification": "C-CLQR2-AN-6-4",
+      "variables": 6,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "HS99",
+      "classification": "C-COOR2-AN-7-2",
+      "variables": 7,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HS99EXP",
+      "classification": "C-COOR2-AN-31-21",
+      "variables": 31,
+      "constraints": 21,
+      "subset": "general"
+    },
+    {
+      "name": "HUBFIT",
+      "classification": "C-COLR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "HUESTIS",
+      "classification": "C-CQLR2-MN-V-V",
+      "variables": 10,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HUESmMOD",
+      "classification": "C-CQLR2-MN-V-V",
+      "variables": 10,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "HYDCAR20",
+      "classification": "C-CNOR2-AN-99-99",
+      "variables": 99,
+      "constraints": 99,
+      "subset": "general"
+    },
+    {
+      "name": "HYDCAR6",
+      "classification": "C-CNOR2-AN-29-29",
+      "variables": 29,
+      "constraints": 29,
+      "subset": "general"
+    },
+    {
+      "name": "HYPCIR",
+      "classification": "C-CNQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "INTEGREQ",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 52,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "INTEQNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 12,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "JANNSON3",
+      "classification": "C-COQR2-AN-V-3",
+      "variables": 6,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "JANNSON4",
+      "classification": "C-COQR2-AN-V-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "JNLBRNG1",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 25,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "JNLBRNG2",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 25,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "JNLBRNGA",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 25,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "JNLBRNGB",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 25,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "JUDGEB",
+      "classification": "C-CSBR2-MN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "JUNKTURN",
+      "classification": "C-CQQR2-MN-V-V",
+      "variables": 60,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "KIWCRESC",
+      "classification": "C-CLQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "KOEBHELB",
+      "classification": "C-CSBR2-RN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "KOWOSBNE",
+      "classification": "C-CNOR2-MN-4-11",
+      "variables": 4,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "KSS",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "LANCZOS1",
+      "classification": "C-CNOR2-MN-6-24",
+      "variables": 6,
+      "constraints": 24,
+      "subset": "general"
+    },
+    {
+      "name": "LANCZOS2",
+      "classification": "C-CNOR2-MN-6-24",
+      "variables": 6,
+      "constraints": 24,
+      "subset": "general"
+    },
+    {
+      "name": "LANCZOS3",
+      "classification": "C-CNOR2-MN-6-24",
+      "variables": 6,
+      "constraints": 24,
+      "subset": "general"
+    },
+    {
+      "name": "LAUNCH",
+      "classification": "C-COOR2-MY-25-28",
+      "variables": 25,
+      "constraints": 28,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE",
+      "classification": "C-CNOR2-AY-V-V",
+      "variables": 5,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE10",
+      "classification": "C-CNOR2-AY-10-20",
+      "variables": 10,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE5",
+      "classification": "C-CNOR2-AY-2-4",
+      "variables": 2,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE6",
+      "classification": "C-CNOR2-AY-3-6",
+      "variables": 5,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE7",
+      "classification": "C-CNOR2-AY-4-8",
+      "variables": 5,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE8",
+      "classification": "C-CNOR2-AY-5-10",
+      "variables": 5,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONE9",
+      "classification": "C-CNOR2-AY-8-16",
+      "variables": 8,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "LEVYMONT",
+      "classification": "C-CSBR2-AY-V-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEVYMONT10",
+      "classification": "C-CSBR2-AY-10-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEVYMONT5",
+      "classification": "C-CSBR2-AY-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEVYMONT6",
+      "classification": "C-CSBR2-AY-3-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEVYMONT7",
+      "classification": "C-CSBR2-AY-4-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEVYMONT8",
+      "classification": "C-CSBR2-AY-5-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEVYMONT9",
+      "classification": "C-CSBR2-AY-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LEWISPOL",
+      "classification": "C-CQOR2-AN-6-9",
+      "variables": 6,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "LIARWHDNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "LINSPANH",
+      "classification": "C-CLNR2-MN-97-33",
+      "variables": 97,
+      "constraints": 33,
+      "subset": "general"
+    },
+    {
+      "name": "LINVERSE",
+      "classification": "C-CSBR2-AN-V-0",
+      "variables": 19,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LINVERSENE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 19,
+      "constraints": 27,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET10",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET11",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET12",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET2",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET3",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET4",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET5",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET6",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET7",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET8",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 53,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LISWET9",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 52,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LOADBAL",
+      "classification": "C-COLR2-MN-31-31",
+      "variables": 31,
+      "constraints": 31,
+      "subset": "general"
+    },
+    {
+      "name": "LOGROS",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "LOOTSMA",
+      "classification": "C-COQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "LOTSCHD",
+      "classification": "C-CQLR2-AN-12-7",
+      "variables": 12,
+      "constraints": 7,
+      "subset": "general"
+    },
+    {
+      "name": "LSC1",
+      "classification": "C-CNOR2-MN-3-6",
+      "variables": 3,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "LSC2",
+      "classification": "C-CNOR2-MN-3-6",
+      "variables": 3,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "LSNNODOC",
+      "classification": "C-CONR2-AY-5-4",
+      "variables": 5,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LSQFIT",
+      "classification": "C-CSLR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "LUBRIF",
+      "classification": "C-CQOR2-MN-V-V",
+      "variables": 76,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LUBRIFC",
+      "classification": "C-CQOR2-MN-V-V",
+      "variables": 76,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "LUKSAN21",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 100,
+      "constraints": 100,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE1",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE10",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE11",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 8,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE12",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 7,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE13",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 20,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE14",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 20,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE15",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE16",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE17",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE18",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE2",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE3",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE4",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE4C",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE5",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 12,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE6",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 9,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE7",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE8",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 50,
+      "constraints": 48,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLE9",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI1",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI10",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI11",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 8,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI12",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 7,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI13",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 8,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI14",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 8,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI15",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI16",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI17",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI18",
+      "classification": "C-COQR2-AY-V-V",
+      "variables": 17,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI2",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI3",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI4",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI4C",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI5",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 12,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI6",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 9,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI7",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI8",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 50,
+      "constraints": 48,
+      "subset": "general"
+    },
+    {
+      "name": "LUKVLI9",
+      "classification": "C-COOR2-AY-V-V",
+      "variables": 10,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "MADSEN",
+      "classification": "C-CLOR2-AN-3-6",
+      "variables": 3,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "MADSSCHJ",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 5,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "MAKELA1",
+      "classification": "C-CLQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "MAKELA2",
+      "classification": "C-CLQR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "MAKELA3",
+      "classification": "C-CLQR2-AN-21-20",
+      "variables": 21,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "MAKELA4",
+      "classification": "C-CLLR2-AN-21-40",
+      "variables": 21,
+      "constraints": 40,
+      "subset": "general"
+    },
+    {
+      "name": "MANCINONE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "MANNE",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 12,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "MARATOS",
+      "classification": "C-CQQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "MATRIX2",
+      "classification": "C-CQOR2-AY-6-2",
+      "variables": 6,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "MAXLIKA",
+      "classification": "C-COBR2-AY-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "MCCORMCK",
+      "classification": "C-COBR2-AY-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "MCONCON",
+      "classification": "C-CLOI2-MN-15-11",
+      "variables": 15,
+      "constraints": 11,
+      "subset": "irregular"
+    },
+    {
+      "name": "MDHOLE",
+      "classification": "C-COBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "MESH",
+      "classification": "C-COOR2-AY-41-48",
+      "variables": 41,
+      "constraints": 48,
+      "subset": "general"
+    },
+    {
+      "name": "METHANB8",
+      "classification": "C-CNOR2-MN-31-31",
+      "variables": 31,
+      "constraints": 31,
+      "subset": "general"
+    },
+    {
+      "name": "METHANL8",
+      "classification": "C-CNOR2-MN-31-31",
+      "variables": 31,
+      "constraints": 31,
+      "subset": "general"
+    },
+    {
+      "name": "MEYER3NE",
+      "classification": "C-CNOR2-RN-3-16",
+      "variables": 3,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "MGH09",
+      "classification": "C-CNOR2-MN-4-11",
+      "variables": 4,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "MGH10",
+      "classification": "C-CNOR2-MN-3-16",
+      "variables": 3,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "MIFFLIN1",
+      "classification": "C-CLQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "MIFFLIN2",
+      "classification": "C-CLQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "MINC44",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 51,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "MINMAXBD",
+      "classification": "C-CLOR2-AN-5-20",
+      "variables": 5,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "MINMAXRB",
+      "classification": "C-CLQR2-AN-3-4",
+      "variables": 3,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "MINPERM",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 5,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "MINSURFO",
+      "classification": "C-COBR2-AN-V-V",
+      "variables": 86,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "MISRA1A",
+      "classification": "C-CNOR2-MN-2-14",
+      "variables": 2,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "MISRA1B",
+      "classification": "C-CNOR2-MN-2-14",
+      "variables": 2,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "MISRA1D",
+      "classification": "C-CNOR2-MN-2-14",
+      "variables": 2,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "MISTAKE",
+      "classification": "C-CQQR2-AY-9-13",
+      "variables": 9,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "MODBEALENE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "MOSARQP1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 36,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "MOSARQP2",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 36,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "MRIBASIS",
+      "classification": "C-CLOR2-MY-36-55",
+      "variables": 36,
+      "constraints": 55,
+      "subset": "general"
+    },
+    {
+      "name": "MSQRTA",
+      "classification": "C-CNQR2-AN-V-V",
+      "variables": 25,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "MSQRTB",
+      "classification": "C-CNQR2-AN-V-V",
+      "variables": 25,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "MSS1",
+      "classification": "C-CQQR2-AN-90-73",
+      "variables": 90,
+      "constraints": 73,
+      "subset": "general"
+    },
+    {
+      "name": "MWRIGHT",
+      "classification": "C-COQR2-AN-5-3",
+      "variables": 5,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "NASH",
+      "classification": "C-CQLR2-AN-72-24",
+      "variables": 72,
+      "constraints": 24,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXBQP1",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "NCVXBQP2",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "NCVXBQP3",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "NCVXQP1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP2",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP3",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP4",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP5",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP6",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP7",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP8",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "NCVXQP9",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 36,
+      "subset": "general"
+    },
+    {
+      "name": "NET1",
+      "classification": "C-COOI2-RN-48-57",
+      "variables": 48,
+      "constraints": 57,
+      "subset": "irregular"
+    },
+    {
+      "name": "NOBNDTOR",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 36,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "NONSCOMP",
+      "classification": "C-CSBR2-AN-V-0",
+      "variables": 25,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "NONSCOMPNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 25,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "NYSTROM5",
+      "classification": "C-CNOR2-RY-18-20",
+      "variables": 18,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "OBSTCLAE",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 100,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "OBSTCLAL",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 100,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "OBSTCLBL",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 100,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "OBSTCLBM",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 100,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "OBSTCLBU",
+      "classification": "C-CQBR2-AY-V-0",
+      "variables": 100,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "ODFITS",
+      "classification": "C-COLR2-MN-10-6",
+      "variables": 10,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "OPTCNTRL",
+      "classification": "C-CQQR2-AN-32-20",
+      "variables": 32,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "OPTMASS",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 70,
+      "constraints": 55,
+      "subset": "general"
+    },
+    {
+      "name": "OPTPRLOC",
+      "classification": "C-CQQR2-AN-30-30",
+      "variables": 30,
+      "constraints": 30,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHRDS2",
+      "classification": "C-CQOR2-AY-V-V",
+      "variables": 23,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHREGA",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 37,
+      "constraints": 16,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHREGB",
+      "classification": "C-CQQR2-AN-27-6",
+      "variables": 27,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHREGC",
+      "classification": "C-CQQR2-AN-V-V",
+      "variables": 25,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHREGD",
+      "classification": "C-CQOR2-AY-V-V",
+      "variables": 23,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHREGE",
+      "classification": "C-CQOR2-AY-V-V",
+      "variables": 36,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHREGF",
+      "classification": "C-CQOR2-AY-V-V",
+      "variables": 80,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHRGDM",
+      "classification": "C-CQOR2-AY-V-V",
+      "variables": 23,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "ORTHRGDS",
+      "classification": "C-CQOR2-AY-V-V",
+      "variables": 43,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "OSBORNE1",
+      "classification": "C-CNOR2-MN-5-33",
+      "variables": 5,
+      "constraints": 33,
+      "subset": "general"
+    },
+    {
+      "name": "OSBORNE2",
+      "classification": "C-CNOR2-MN-11-65",
+      "variables": 11,
+      "constraints": 65,
+      "subset": "general"
+    },
+    {
+      "name": "OSCIGRNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "OSCIPANE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "OSLBQP",
+      "classification": "C-CQBR2-AN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER1",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER1A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER1ANE",
+      "classification": "C-CNOR2-RN-6-35",
+      "variables": 6,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER1B",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER1BNE",
+      "classification": "C-CNOR2-RN-4-35",
+      "variables": 4,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER1E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER1ENE",
+      "classification": "C-CNOR2-RN-8-35",
+      "variables": 8,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER1NE",
+      "classification": "C-CNOR2-RN-4-31",
+      "variables": 4,
+      "constraints": 31,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER2",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER2A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER2ANE",
+      "classification": "C-CNOR2-RN-6-23",
+      "variables": 6,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER2B",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER2BNE",
+      "classification": "C-CNOR2-RN-4-23",
+      "variables": 4,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER2E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER2ENE",
+      "classification": "C-CNOR2-RN-8-23",
+      "variables": 8,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER3",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER3A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER3ANE",
+      "classification": "C-CNOR2-RN-6-23",
+      "variables": 6,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER3B",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER3BNE",
+      "classification": "C-CNOR2-RN-4-23",
+      "variables": 4,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER3E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER3ENE",
+      "classification": "C-CNOR2-RN-8-23",
+      "variables": 8,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER4",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER4A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER4ANE",
+      "classification": "C-CNOR2-RN-6-23",
+      "variables": 6,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER4B",
+      "classification": "C-CSBR2-RN-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER4BNE",
+      "classification": "C-CNOR2-RN-4-23",
+      "variables": 4,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER4E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER4ENE",
+      "classification": "C-CNOR2-RN-8-23",
+      "variables": 8,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER5A",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER5ANE",
+      "classification": "C-CNOR2-RN-8-12",
+      "variables": 8,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER5B",
+      "classification": "C-CSBR2-RN-9-0",
+      "variables": 9,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER5BNE",
+      "classification": "C-CNOR2-RN-9-12",
+      "variables": 9,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER5E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER5ENE",
+      "classification": "C-CNOR2-RN-8-12",
+      "variables": 8,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER6A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER6ANE",
+      "classification": "C-CNOR2-RN-6-13",
+      "variables": 6,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER6E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER6ENE",
+      "classification": "C-CNOR2-RN-8-13",
+      "variables": 8,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER7A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER7ANE",
+      "classification": "C-CNOR2-RN-6-13",
+      "variables": 6,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER7E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER7ENE",
+      "classification": "C-CNOR2-RN-8-13",
+      "variables": 8,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER8A",
+      "classification": "C-CSBR2-RN-6-0",
+      "variables": 6,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER8ANE",
+      "classification": "C-CNOR2-RN-6-12",
+      "variables": 6,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "PALMER8E",
+      "classification": "C-CSBR2-RN-8-0",
+      "variables": 8,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PALMER8ENE",
+      "classification": "C-CNOR2-RN-8-12",
+      "variables": 8,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "PENLT1NE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "PENLT2NE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "PENTAGON",
+      "classification": "C-COLR2-AY-6-15",
+      "variables": 6,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "PENTDI",
+      "classification": "C-CQBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PFIT1LS",
+      "classification": "C-CSBR2-AN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PFIT2LS",
+      "classification": "C-CSBR2-AN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PFIT3LS",
+      "classification": "C-CSBR2-AN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PFIT4LS",
+      "classification": "C-CSBR2-AN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "POLAK1",
+      "classification": "C-CLOR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "POLAK2",
+      "classification": "C-CLOR2-AN-11-2",
+      "variables": 11,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "POLAK3",
+      "classification": "C-CLOR2-AN-12-10",
+      "variables": 12,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "POLAK4",
+      "classification": "C-CLQR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "POLAK5",
+      "classification": "C-CLOR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "POLAK6",
+      "classification": "C-CLOR2-AN-5-4",
+      "variables": 5,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "POROUS1",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 25,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "POROUS2",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 25,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "PORTFL1",
+      "classification": "C-CSLR2-MN-12-1",
+      "variables": 12,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "PORTFL2",
+      "classification": "C-CSLR2-MN-12-1",
+      "variables": 12,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "PORTFL3",
+      "classification": "C-CSLR2-MN-12-1",
+      "variables": 12,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "PORTFL4",
+      "classification": "C-CSLR2-MN-12-1",
+      "variables": 12,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "PORTFL6",
+      "classification": "C-CSLR2-MN-12-1",
+      "variables": 12,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "PORTSNQP",
+      "classification": "C-CQLR2-AN-V-1",
+      "variables": 10,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "POWELLBC",
+      "classification": "C-COBR2-AN-V-0",
+      "variables": 24,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "POWELLBS",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "POWELLSQ",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "POWERSUMB",
+      "classification": "C-CSBR2-MN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "POWERSUMNE",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "PRICE3B",
+      "classification": "C-CSBR2-MN-V-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PRICE3NE",
+      "classification": "C-CNOR2-MN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "PRICE4B",
+      "classification": "C-CSBR2-MN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "PRICE4NE",
+      "classification": "C-CNOR2-MN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "PRODPL0",
+      "classification": "C-CLQR2-RY-60-29",
+      "variables": 60,
+      "constraints": 29,
+      "subset": "general"
+    },
+    {
+      "name": "PRODPL1",
+      "classification": "C-CLQR2-RY-60-29",
+      "variables": 60,
+      "constraints": 29,
+      "subset": "general"
+    },
+    {
+      "name": "PSPDOC",
+      "classification": "C-CSBR2-AY-4-0",
+      "variables": 4,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "QC",
+      "classification": "C-COLR2-MY-9-4",
+      "variables": 9,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "QINGB",
+      "classification": "C-CSBR2-MN-V-0",
+      "variables": 5,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "QINGNE",
+      "classification": "C-CNOR2-MN-V-V",
+      "variables": 5,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "QPBAND",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 100,
+      "constraints": 50,
+      "subset": "general"
+    },
+    {
+      "name": "QPCBLEND",
+      "classification": "C-CQLR2-MN-83-74",
+      "variables": 83,
+      "constraints": 74,
+      "subset": "general"
+    },
+    {
+      "name": "QPNBLEND",
+      "classification": "C-CQLR2-MN-83-74",
+      "variables": 83,
+      "constraints": 74,
+      "subset": "general"
+    },
+    {
+      "name": "QR3D",
+      "classification": "C-CNQR2-AN-V-V",
+      "variables": 40,
+      "constraints": 40,
+      "subset": "general"
+    },
+    {
+      "name": "QR3DLS",
+      "classification": "C-CSBR2-AN-V-V",
+      "variables": 40,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "QUDLIN",
+      "classification": "C-CQBR2-AN-V-V",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "RAT42",
+      "classification": "C-CNOR2-MN-3-9",
+      "variables": 3,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "RAT43",
+      "classification": "C-CNOR2-MN-4-15",
+      "variables": 4,
+      "constraints": 15,
+      "subset": "general"
+    },
+    {
+      "name": "RDW2D51F",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "RDW2D51U",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "RDW2D52B",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "RDW2D52F",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "RDW2D52U",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 50,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "READING1",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 22,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "READING2",
+      "classification": "C-CLLR2-MN-V-V",
+      "variables": 33,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "READING3",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 12,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "READING4",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "READING5",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 6,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "READING9",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 6,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "RECIPE",
+      "classification": "C-CNOR2-AY-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "RES",
+      "classification": "C-CNLR2-MN-20-14",
+      "variables": 20,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "RK23",
+      "classification": "C-CLOR2-RN-17-11",
+      "variables": 17,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "ROBOT",
+      "classification": "C-CQOR2-MY-14-2",
+      "variables": 14,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "ROSENMMX",
+      "classification": "C-CLQR2-AN-5-4",
+      "variables": 5,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "ROSEPETAL",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 2,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "ROSEPETAL2",
+      "classification": "C-CLQR2-AN-V-V",
+      "variables": 11,
+      "constraints": 21,
+      "subset": "general"
+    },
+    {
+      "name": "ROSZMAN1",
+      "classification": "C-CNOR2-MN-4-25",
+      "variables": 4,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "RSNBRNE",
+      "classification": "C-CNOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "S268",
+      "classification": "C-CQLR2-AN-5-5",
+      "variables": 5,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "S316m322",
+      "classification": "C-CQQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "S368",
+      "classification": "C-COBR2-MN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "SANTA",
+      "classification": "C-CNOR2-AN-21-23",
+      "variables": 21,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "SANTALS",
+      "classification": "C-CSBR2-AN-21-0",
+      "variables": 21,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "SCOND1LS",
+      "classification": "C-CSBR2-AN-V-V",
+      "variables": 12,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "SCW1",
+      "classification": "C-CSLR2-MN-V-V",
+      "variables": 9,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "SCW2",
+      "classification": "C-CSLR2-MN-V-V",
+      "variables": 23,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "SEMICN2U",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 12,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "SEMICON1",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 12,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "SEMICON2",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 12,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "SIM2BQP",
+      "classification": "C-CQBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "SIMBQP",
+      "classification": "C-CQBR2-AN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "SIMPLLPA",
+      "classification": "C-CLLR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "SIMPLLPB",
+      "classification": "C-CLLR2-AN-2-3",
+      "variables": 2,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "SINEALI",
+      "classification": "C-COBR2-AN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "SINROSNB",
+      "classification": "C-COQR2-AN-V-V",
+      "variables": 10,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "SNAKE",
+      "classification": "C-CLOR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "SOSQP1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 20,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "SOSQP2",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 20,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "SPANHYD",
+      "classification": "C-CONR2-RN-97-33",
+      "variables": 97,
+      "constraints": 33,
+      "subset": "general"
+    },
+    {
+      "name": "SPINOP",
+      "classification": "C-CQOR2-AN-V-V",
+      "variables": 7,
+      "constraints": 5,
+      "subset": "general"
+    },
+    {
+      "name": "SPIRAL",
+      "classification": "C-CLOR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "SREADIN3",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 22,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "SSBRYBNDNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "SSINE",
+      "classification": "C-CNOR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "STANCMIN",
+      "classification": "C-COLI2-AY-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "irregular"
+    },
+    {
+      "name": "STNQP1",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 17,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "STNQP2",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 17,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "STREGNE",
+      "classification": "C-CNOR2-AN-4-2",
+      "variables": 4,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "SUPERSIM",
+      "classification": "C-CLLR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "SVANBERG",
+      "classification": "C-COOR2-MN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "SWOPF",
+      "classification": "C-CLQR2-RN-83-92",
+      "variables": 83,
+      "constraints": 92,
+      "subset": "general"
+    },
+    {
+      "name": "SYNTHES1",
+      "classification": "C-COOR2-AN-6-6",
+      "variables": 6,
+      "constraints": 6,
+      "subset": "general"
+    },
+    {
+      "name": "SYNTHES2",
+      "classification": "C-COOR2-AN-11-14",
+      "variables": 11,
+      "constraints": 14,
+      "subset": "general"
+    },
+    {
+      "name": "SYNTHES3",
+      "classification": "C-COOR2-AN-17-19",
+      "variables": 17,
+      "constraints": 23,
+      "subset": "general"
+    },
+    {
+      "name": "TAME",
+      "classification": "C-CQLR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "TENBARS1",
+      "classification": "C-CLOR2-MY-18-9",
+      "variables": 18,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "TENBARS2",
+      "classification": "C-CLOR2-MY-18-8",
+      "variables": 18,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "TENBARS3",
+      "classification": "C-CLOR2-MY-18-8",
+      "variables": 18,
+      "constraints": 8,
+      "subset": "general"
+    },
+    {
+      "name": "TENBARS4",
+      "classification": "C-CLOR2-MY-18-9",
+      "variables": 18,
+      "constraints": 9,
+      "subset": "general"
+    },
+    {
+      "name": "THURBER",
+      "classification": "C-CNOR2-MN-7-37",
+      "variables": 7,
+      "constraints": 37,
+      "subset": "general"
+    },
+    {
+      "name": "TORSION1",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSION2",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSION3",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSION4",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSION5",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSION6",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSIONA",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSIONB",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSIONC",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSIOND",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSIONE",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TORSIONF",
+      "classification": "C-CQBR2-MY-V-0",
+      "variables": 16,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TQUARTICNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "TRAINF",
+      "classification": "C-CQQR2-MN-V-V",
+      "variables": 48,
+      "constraints": 22,
+      "subset": "general"
+    },
+    {
+      "name": "TRAINH",
+      "classification": "C-CQOR2-MN-V-V",
+      "variables": 48,
+      "constraints": 22,
+      "subset": "general"
+    },
+    {
+      "name": "TRIGON1B",
+      "classification": "C-CSBR2-MN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TRIGON2B",
+      "classification": "C-CSBR2-MN-V-0",
+      "variables": 10,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "TRO3X3",
+      "classification": "C-CLOR2-RN-30-13",
+      "variables": 30,
+      "constraints": 13,
+      "subset": "general"
+    },
+    {
+      "name": "TRO4X4",
+      "classification": "C-CLOR2-RN-63-25",
+      "variables": 63,
+      "constraints": 25,
+      "subset": "general"
+    },
+    {
+      "name": "TRO6X2",
+      "classification": "C-CLOR2-RN-45-21",
+      "variables": 45,
+      "constraints": 21,
+      "subset": "general"
+    },
+    {
+      "name": "TRUSPYR1",
+      "classification": "C-CLQR2-MN-11-4",
+      "variables": 11,
+      "constraints": 4,
+      "subset": "general"
+    },
+    {
+      "name": "TRUSPYR2",
+      "classification": "C-CLQR2-MN-11-11",
+      "variables": 11,
+      "constraints": 11,
+      "subset": "general"
+    },
+    {
+      "name": "TRYmB",
+      "classification": "C-CQQR2-AN-2-1",
+      "variables": 2,
+      "constraints": 1,
+      "subset": "general"
+    },
+    {
+      "name": "TWOBARS",
+      "classification": "C-COOR2-MN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "TWOD",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 31,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "VANDERM1",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "VANDERM2",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "VANDERM3",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "VANDERM4",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 19,
+      "subset": "general"
+    },
+    {
+      "name": "VARDIMNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 12,
+      "subset": "general"
+    },
+    {
+      "name": "WACHBIEG",
+      "classification": "C-CLQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "WATSONNE",
+      "classification": "C-CNOR2-AN-V-31",
+      "variables": 12,
+      "constraints": 31,
+      "subset": "general"
+    },
+    {
+      "name": "WAYSEA1B",
+      "classification": "C-CSBR2-MN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "WAYSEA1NE",
+      "classification": "C-CNOR2-MN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "WAYSEA2B",
+      "classification": "C-CSBR2-MN-2-0",
+      "variables": 2,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "WAYSEA2NE",
+      "classification": "C-CNOR2-MN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "WEEDS",
+      "classification": "C-CSBR2-RN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "WOMFLET",
+      "classification": "C-CLOR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "YAO",
+      "classification": "C-CQLR2-AN-V-V",
+      "variables": 22,
+      "constraints": 20,
+      "subset": "general"
+    },
+    {
+      "name": "YATP1CNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 35,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "YATP2CNE",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 35,
+      "constraints": 35,
+      "subset": "general"
+    },
+    {
+      "name": "YFIT",
+      "classification": "C-CSBR2-MN-3-0",
+      "variables": 3,
+      "constraints": 0,
+      "subset": "bounds"
+    },
+    {
+      "name": "YFITNE",
+      "classification": "C-CNOR2-MN-3-17",
+      "variables": 3,
+      "constraints": 17,
+      "subset": "general"
+    },
+    {
+      "name": "ZANGWIL3",
+      "classification": "C-CNLR2-AN-3-3",
+      "variables": 3,
+      "constraints": 3,
+      "subset": "general"
+    },
+    {
+      "name": "ZECEVIC2",
+      "classification": "C-CQLR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "ZECEVIC3",
+      "classification": "C-CQQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "ZECEVIC4",
+      "classification": "C-CQQR2-AN-2-2",
+      "variables": 2,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "ZY2",
+      "classification": "C-COQR2-AN-3-2",
+      "variables": 3,
+      "constraints": 2,
+      "subset": "general"
+    },
+    {
+      "name": "n10FOLDTR",
+      "classification": "C-CNOR2-AN-V-V",
+      "variables": 10,
+      "constraints": 10,
+      "subset": "general"
+    },
+    {
+      "name": "n3PK",
+      "classification": "C-CSBR2-MN-30-0",
+      "variables": 30,
+      "constraints": 0,
+      "subset": "bounds"
+    }
+  ],
+  "excluded": {
+    "ACOPP30": "too many constraints",
+    "ACOPR30": "too many constraints",
+    "AGG": "too many variables",
+    "AIRCRFTB": "has no constraints beyond fixed variables",
+    "AIRPORT": "The process ran longer than 60.0 seconds.",
+    "ALLINITU": "has no constraints beyond fixed variables",
+    "ANTWERP": "unexpected classification C-CSLR2-RN-27-8-0-3-24-0-2-0-8-0-0-0",
+    "ARGLINA": "has no constraints beyond fixed variables",
+    "ARGLINB": "has no constraints beyond fixed variables",
+    "ARGTRIGLS": "has no constraints beyond fixed variables",
+    "ARWHEAD": "has no constraints beyond fixed variables",
+    "BARD": "has no constraints beyond fixed variables",
+    "BAmL1SP": "The process ran longer than 60.0 seconds.",
+    "BAmL1SPLS": "has no constraints beyond fixed variables",
+    "BDQRTIC": "has no constraints beyond fixed variables",
+    "BEALE": "has no constraints beyond fixed variables",
+    "BENNETT5": "too many constraints",
+    "BENNETT5LS": "has no constraints beyond fixed variables",
+    "BIGGS3": "has no constraints beyond fixed variables",
+    "BIGGS6": "has no constraints beyond fixed variables",
+    "BOX2": "has no constraints beyond fixed variables",
+    "BOX3": "has no constraints beyond fixed variables",
+    "BOXBODLS": "has no constraints beyond fixed variables",
+    "BRATU1D": "has no constraints beyond fixed variables",
+    "BRKMCC": "has no constraints beyond fixed variables",
+    "BROWNAL": "has no constraints beyond fixed variables",
+    "BROWNBS": "has no constraints beyond fixed variables",
+    "BROWNDEN": "has no constraints beyond fixed variables",
+    "BROYDN3DLS": "has no constraints beyond fixed variables",
+    "BROYDNBDLS": "has no constraints beyond fixed variables",
+    "BRYBND": "has no constraints beyond fixed variables",
+    "CHANDHEU": "The process ran longer than 60.0 seconds.",
+    "CHANDHEULS": "The process ran longer than 60.0 seconds.",
+    "CHNROSNB": "has no constraints beyond fixed variables",
+    "CHNRSNBM": "has no constraints beyond fixed variables",
+    "CHWIRUT1LS": "has no constraints beyond fixed variables",
+    "CHWIRUT2LS": "has no constraints beyond fixed variables",
+    "CLIFF": "has no constraints beyond fixed variables",
+    "CLPLATEA": "has no constraints beyond fixed variables",
+    "CLPLATEB": "has no constraints beyond fixed variables",
+    "CLUSTERLS": "has no constraints beyond fixed variables",
+    "COOLHANSLS": "has no constraints beyond fixed variables",
+    "CORE2": "too many variables",
+    "COSINE": "has no constraints beyond fixed variables",
+    "CRAGGLVY": "has no constraints beyond fixed variables",
+    "CUBE": "has no constraints beyond fixed variables",
+    "CURLY10": "has no constraints beyond fixed variables",
+    "CURLY20": "has no constraints beyond fixed variables",
+    "CURLY30": "has no constraints beyond fixed variables",
+    "CYCLIC3LS": "has no constraints beyond fixed variables",
+    "CYCLOOCFLS": "has no constraints beyond fixed variables",
+    "CmRELOAD": "too many variables",
+    "DANIWOODLS": "has no constraints beyond fixed variables",
+    "DANWOODLS": "has no constraints beyond fixed variables",
+    "DECONVU": "has no constraints beyond fixed variables",
+    "DENSCHNA": "has no constraints beyond fixed variables",
+    "DENSCHNB": "has no constraints beyond fixed variables",
+    "DENSCHNC": "has no constraints beyond fixed variables",
+    "DENSCHND": "has no constraints beyond fixed variables",
+    "DENSCHNE": "has no constraints beyond fixed variables",
+    "DENSCHNF": "has no constraints beyond fixed variables",
+    "DEVGLA1": "has no constraints beyond fixed variables",
+    "DEVGLA2": "has no constraints beyond fixed variables",
+    "DIAMON2D": "too many constraints",
+    "DIAMON2DLS": "has no constraints beyond fixed variables",
+    "DIAMON3D": "too many constraints",
+    "DIAMON3DLS": "has no constraints beyond fixed variables",
+    "DITTERT": "ValueError: gradient is not finite",
+    "DIXMAANA1": "has no constraints beyond fixed variables",
+    "DIXMAANB": "has no constraints beyond fixed variables",
+    "DIXMAANC": "has no constraints beyond fixed variables",
+    "DIXMAAND": "has no constraints beyond fixed variables",
+    "DIXMAANE1": "has no constraints beyond fixed variables",
+    "DIXMAANF": "has no constraints beyond fixed variables",
+    "DIXMAANG": "has no constraints beyond fixed variables",
+    "DIXMAANH": "has no constraints beyond fixed variables",
+    "DIXMAANI1": "has no constraints beyond fixed variables",
+    "DIXMAANJ": "has no constraints beyond fixed variables",
+    "DIXMAANK": "has no constraints beyond fixed variables",
+    "DIXMAANL": "has no constraints beyond fixed variables",
+    "DIXMAANM1": "has no constraints beyond fixed variables",
+    "DIXMAANN": "has no constraints beyond fixed variables",
+    "DIXMAANO": "has no constraints beyond fixed variables",
+    "DIXMAANP": "has no constraints beyond fixed variables",
+    "DIXON3DQ": "has no constraints beyond fixed variables",
+    "DJTL": "has no constraints beyond fixed variables",
+    "DMN15102": "too many constraints",
+    "DMN15102LS": "has no constraints beyond fixed variables",
+    "DMN15103": "too many constraints",
+    "DMN15103LS": "has no constraints beyond fixed variables",
+    "DMN15332": "too many constraints",
+    "DMN15332LS": "has no constraints beyond fixed variables",
+    "DMN15333": "too many constraints",
+    "DMN15333LS": "has no constraints beyond fixed variables",
+    "DMN37142": "too many constraints",
+    "DMN37142LS": "has no constraints beyond fixed variables",
+    "DMN37143": "too many constraints",
+    "DMN37143LS": "has no constraints beyond fixed variables",
+    "DQRTIC": "has no constraints beyond fixed variables",
+    "DRCAV1LQ": "has no constraints beyond fixed variables",
+    "DRCAV2LQ": "has no constraints beyond fixed variables",
+    "DRCAV3LQ": "has no constraints beyond fixed variables",
+    "DRCAVTY1": "ValueError: size 196 variables and 100 constraints is too large",
+    "DRCAVTY2": "ValueError: size 196 variables and 100 constraints is too large",
+    "DRCAVTY3": "ValueError: size 196 variables and 100 constraints is too large",
+    "DUAL1": "The process ran longer than 60.0 seconds.",
+    "DUAL2": "The process ran longer than 60.0 seconds.",
+    "DUALC1": "too many constraints",
+    "ECKERLE4LS": "has no constraints beyond fixed variables",
+    "EDENSCH": "has no constraints beyond fixed variables",
+    "EG2": "has no constraints beyond fixed variables",
+    "EGGCRATE": "has no constraints beyond fixed variables",
+    "EIGENALS": "has no constraints beyond fixed variables",
+    "EIGENBLS": "has no constraints beyond fixed variables",
+    "ELATTAR": "too many constraints",
+    "ELATVIDU": "has no constraints beyond fixed variables",
+    "ENGVAL1": "has no constraints beyond fixed variables",
+    "ENGVAL2": "has no constraints beyond fixed variables",
+    "ENSO": "too many constraints",
+    "ENSOLS": "has no constraints beyond fixed variables",
+    "EQC": "ValueError: gradient differs from finite differences by 7.1e+11",
+    "ERRINROS": "has no constraints beyond fixed variables",
+    "ERRINRSM": "has no constraints beyond fixed variables",
+    "EXPFIT": "has no constraints beyond fixed variables",
+    "EXPFITB": "too many constraints",
+    "EXPFITC": "too many constraints",
+    "EXTROSNB": "has no constraints beyond fixed variables",
+    "FBRAIN3LS": "has no constraints beyond fixed variables",
+    "FEEDLOC": "too many constraints",
+    "FERRISDC": "unexpected classification C-C",
+    "FLETBV3M": "has no constraints beyond fixed variables",
+    "FLETCBV2": "has no constraints beyond fixed variables",
+    "FLETCBV3": "has no constraints beyond fixed variables",
+    "FLETCHBV": "has no constraints beyond fixed variables",
+    "FLETCHCR": "has no constraints beyond fixed variables",
+    "FMINSRF2": "has no constraints beyond fixed variables",
+    "FMINSURF": "has no constraints beyond fixed variables",
+    "FREUROTH": "has no constraints beyond fixed variables",
+    "GASOIL": "ValueError: size 263 variables and 258 constraints is too large",
+    "GAUSS1LS": "has no constraints beyond fixed variables",
+    "GAUSS2LS": "has no constraints beyond fixed variables",
+    "GAUSS3LS": "has no constraints beyond fixed variables",
+    "GAUSSIAN": "has no constraints beyond fixed variables",
+    "GENHUMPS": "has no constraints beyond fixed variables",
+    "GENROSE": "has no constraints beyond fixed variables",
+    "GPP": "ValueError: size 100 variables and 198 constraints is too large",
+    "GROWTHLS": "has no constraints beyond fixed variables",
+    "GULF": "has no constraints beyond fixed variables",
+    "HADAMARD": "ValueError: size 101 variables and 255 constraints is too large",
+    "HAHN1": "ValueError: size 7 variables and 236 constraints is too large",
+    "HAHN1LS": "has no constraints beyond fixed variables",
+    "HAIRY": "has no constraints beyond fixed variables",
+    "HATFLDD": "has no constraints beyond fixed variables",
+    "HATFLDE": "has no constraints beyond fixed variables",
+    "HATFLDFL": "has no constraints beyond fixed variables",
+    "HATFLDFLS": "has no constraints beyond fixed variables",
+    "HEART6LS": "has no constraints beyond fixed variables",
+    "HEART8LS": "has no constraints beyond fixed variables",
+    "HELIX": "has no constraints beyond fixed variables",
+    "HELIXNE": "ValueError: Jacobian differs from finite differences by 5.0e+07",
+    "HETmZ": "ValueError: size 2 variables and 1002 constraints is too large",
+    "HILBERTA": "has no constraints beyond fixed variables",
+    "HILBERTB": "has no constraints beyond fixed variables",
+    "HIMMELBB": "has no constraints beyond fixed variables",
+    "HIMMELBCLS": "has no constraints beyond fixed variables",
+    "HIMMELBF": "has no constraints beyond fixed variables",
+    "HIMMELBG": "has no constraints beyond fixed variables",
+    "HIMMELBH": "has no constraints beyond fixed variables",
+    "HIMMELBJ": "ValueError: gradient is not finite",
+    "HS112": "ValueError: gradient is not finite",
+    "HUMPS": "has no constraints beyond fixed variables",
+    "HYDC20LS": "has no constraints beyond fixed variables",
+    "HYDCAR6LS": "has no constraints beyond fixed variables",
+    "INDEF": "has no constraints beyond fixed variables",
+    "INDEFM": "has no constraints beyond fixed variables",
+    "INTEQNELS": "has no constraints beyond fixed variables",
+    "JENSMP": "has no constraints beyond fixed variables",
+    "JUDGE": "has no constraints beyond fixed variables",
+    "KIRBY2LS": "has no constraints beyond fixed variables",
+    "KISSING": "ValueError: size 76 variables and 325 constraints is too large",
+    "KISSING2": "ValueError: size 100 variables and 625 constraints is too large",
+    "KOEBHELBNE": "too many constraints",
+    "KOWOSB": "has no constraints beyond fixed variables",
+    "KSSLS": "has no constraints beyond fixed variables",
+    "LAKES": "ValueError: gradient differs from finite differences by 1.1e+02",
+    "LANCZOS1LS": "has no constraints beyond fixed variables",
+    "LANCZOS2LS": "has no constraints beyond fixed variables",
+    "LANCZOS3LS": "has no constraints beyond fixed variables",
+    "LEAKNET": "too many variables",
+    "LIARWHD": "has no constraints beyond fixed variables",
+    "LIN": "ValueError: gradient is not finite",
+    "LIPPERT1": "ValueError: size 74 variables and 150 constraints is too large",
+    "LIPPERT2": "ValueError: size 74 variables and 150 constraints is too large",
+    "LMINSURF": "has no constraints beyond fixed variables",
+    "LOGHAIRY": "has no constraints beyond fixed variables",
+    "LSC1LS": "has no constraints beyond fixed variables",
+    "LSC2LS": "has no constraints beyond fixed variables",
+    "LUKSAN11": "ValueError: size 100 variables and 198 constraints is too large",
+    "LUKSAN11LS": "has no constraints beyond fixed variables",
+    "LUKSAN12": "ValueError: size 98 variables and 192 constraints is too large",
+    "LUKSAN12LS": "has no constraints beyond fixed variables",
+    "LUKSAN13": "ValueError: size 98 variables and 224 constraints is too large",
+    "LUKSAN13LS": "has no constraints beyond fixed variables",
+    "LUKSAN14": "ValueError: size 98 variables and 224 constraints is too large",
+    "LUKSAN14LS": "has no constraints beyond fixed variables",
+    "LUKSAN17": "ValueError: size 100 variables and 196 constraints is too large",
+    "LUKSAN17LS": "has no constraints beyond fixed variables",
+    "LUKSAN21LS": "has no constraints beyond fixed variables",
+    "LUKSAN22": "ValueError: size 100 variables and 198 constraints is too large",
+    "LUKSAN22LS": "has no constraints beyond fixed variables",
+    "MANCINO": "has no constraints beyond fixed variables",
+    "MARATOSB": "has no constraints beyond fixed variables",
+    "METHANB8LS": "has no constraints beyond fixed variables",
+    "METHANL8LS": "has no constraints beyond fixed variables",
+    "MEXHAT": "has no constraints beyond fixed variables",
+    "MEYER3": "has no constraints beyond fixed variables",
+    "MGH09LS": "has no constraints beyond fixed variables",
+    "MGH10LS": "has no constraints beyond fixed variables",
+    "MGH10SLS": "has no constraints beyond fixed variables",
+    "MGH17LS": "has no constraints beyond fixed variables",
+    "MGH17SLS": "has no constraints beyond fixed variables",
+    "MINSURF": "has no constraints beyond fixed variables",
+    "MISRA1ALS": "has no constraints beyond fixed variables",
+    "MISRA1BLS": "has no constraints beyond fixed variables",
+    "MISRA1C": "ValueError: constraint values are not finite",
+    "MISRA1CLS": "has no constraints beyond fixed variables",
+    "MISRA1DLS": "has no constraints beyond fixed variables",
+    "MODBEALE": "has no constraints beyond fixed variables",
+    "MOREBV": "has no constraints beyond fixed variables",
+    "MSQRTALS": "has no constraints beyond fixed variables",
+    "MSQRTBLS": "has no constraints beyond fixed variables",
+    "MUONSINE": "too many constraints",
+    "MUONSINELS": "has no constraints beyond fixed variables",
+    "NCB20": "has no constraints beyond fixed variables",
+    "NCB20B": "has no constraints beyond fixed variables",
+    "NELSON": "too many constraints",
+    "NELSONLS": "has no constraints beyond fixed variables",
+    "NONCVXU2": "has no constraints beyond fixed variables",
+    "NONCVXUN": "has no constraints beyond fixed variables",
+    "NONDIA": "has no constraints beyond fixed variables",
+    "NONDQUAR": "has no constraints beyond fixed variables",
+    "NUFFIELD": "ValueError: size 85 variables and 350 constraints is too large",
+    "OET1": "ValueError: size 3 variables and 1002 constraints is too large",
+    "OET2": "ValueError: size 3 variables and 1002 constraints is too large",
+    "OET3": "ValueError: size 4 variables and 1002 constraints is too large",
+    "OET4": "ValueError: size 4 variables and 1002 constraints is too large",
+    "OET5": "ValueError: size 5 variables and 1002 constraints is too large",
+    "OET6": "ValueError: size 5 variables and 1002 constraints is too large",
+    "OET7": "ValueError: size 7 variables and 1002 constraints is too large",
+    "ORTHRDM2": "ValueError: size 103 variables and 50 constraints is too large",
+    "OSBORNEA": "has no constraints beyond fixed variables",
+    "OSBORNEB": "has no constraints beyond fixed variables",
+    "OSCIGRAD": "has no constraints beyond fixed variables",
+    "OSCIPATH": "has no constraints beyond fixed variables",
+    "PALMER1C": "has no constraints beyond fixed variables",
+    "PALMER1D": "has no constraints beyond fixed variables",
+    "PALMER2C": "has no constraints beyond fixed variables",
+    "PALMER3C": "has no constraints beyond fixed variables",
+    "PALMER4C": "has no constraints beyond fixed variables",
+    "PALMER5C": "has no constraints beyond fixed variables",
+    "PALMER6C": "has no constraints beyond fixed variables",
+    "PALMER7C": "has no constraints beyond fixed variables",
+    "PALMER8C": "has no constraints beyond fixed variables",
+    "PDE1": "ValueError: size 65 variables and 156 constraints is too large",
+    "PDE2": "ValueError: size 112 variables and 156 constraints is too large",
+    "PENALTY1": "has no constraints beyond fixed variables",
+    "PENALTY2": "has no constraints beyond fixed variables",
+    "POWELLBSLS": "has no constraints beyond fixed variables",
+    "POWELLSG": "has no constraints beyond fixed variables",
+    "POWELLSQLS": "has no constraints beyond fixed variables",
+    "POWER": "has no constraints beyond fixed variables",
+    "POWERSUM": "has no constraints beyond fixed variables",
+    "PT": "ValueError: size 2 variables and 501 constraints is too large",
+    "QCNEW": "ValueError: gradient is not finite",
+    "QING": "has no constraints beyond fixed variables",
+    "QRTQUAD": "ValueError: size 101 variables and 0 constraints is too large",
+    "QUARTC": "has no constraints beyond fixed variables",
+    "RAT42LS": "has no constraints beyond fixed variables",
+    "RAT43LS": "has no constraints beyond fixed variables",
+    "RAYBENDL": "has no constraints beyond fixed variables",
+    "RECIPELS": "has no constraints beyond fixed variables",
+    "REPEAT": "ValueError: size 100 variables and 201 constraints is too large",
+    "ROSENBR": "has no constraints beyond fixed variables",
+    "ROSENBRTU": "has no constraints beyond fixed variables",
+    "ROSZMAN1LS": "has no constraints beyond fixed variables",
+    "ROTDISC": "too many variables",
+    "S308": "has no constraints beyond fixed variables",
+    "S365": "ValueError: Jacobian differs from finite differences by 1.0e+00",
+    "S365MOD": "ValueError: Jacobian differs from finite differences by 1.0e+00",
+    "SBRYBND": "has no constraints beyond fixed variables",
+    "SCHMVETT": "has no constraints beyond fixed variables",
+    "SCOSINE": "has no constraints beyond fixed variables",
+    "SCURLY10": "has no constraints beyond fixed variables",
+    "SCURLY20": "has no constraints beyond fixed variables",
+    "SCURLY30": "has no constraints beyond fixed variables",
+    "SENSORS": "has no constraints beyond fixed variables",
+    "SINEVAL": "has no constraints beyond fixed variables",
+    "SINQUAD": "has no constraints beyond fixed variables",
+    "SINQUAD2": "has no constraints beyond fixed variables",
+    "SIPOW1": "ValueError: size 2 variables and 2000 constraints is too large",
+    "SIPOW2": "ValueError: size 2 variables and 2000 constraints is too large",
+    "SIPOW2M": "ValueError: size 2 variables and 2000 constraints is too large",
+    "SIPOW3": "ValueError: size 4 variables and 2000 constraints is too large",
+    "SIPOW4": "ValueError: size 4 variables and 2000 constraints is too large",
+    "SISSER": "has no constraints beyond fixed variables",
+    "SISSER2": "has no constraints beyond fixed variables",
+    "SNAIL": "has no constraints beyond fixed variables",
+    "SPARSINE": "has no constraints beyond fixed variables",
+    "SPARSQUR": "has no constraints beyond fixed variables",
+    "SPECAN": "The process ran longer than 60.0 seconds.",
+    "SPECANNE": "ValueError: size 9 variables and 15000 constraints is too large",
+    "SPIN2LS": "has no constraints beyond fixed variables",
+    "SPINLS": "has no constraints beyond fixed variables",
+    "SPMSRTLS": "has no constraints beyond fixed variables",
+    "SSBRYBND": "has no constraints beyond fixed variables",
+    "SSCOSINE": "has no constraints beyond fixed variables",
+    "SSEBNLN": "too many variables",
+    "SSI": "has no constraints beyond fixed variables",
+    "STREG": "has no constraints beyond fixed variables",
+    "STRTCHDV": "has no constraints beyond fixed variables",
+    "TARGUS": "too many variables",
+    "TAX13322": "too many constraints",
+    "TFI1": "ValueError: size 3 variables and 101 constraints is too large",
+    "TFI2": "ValueError: size 3 variables and 101 constraints is too large",
+    "TFI3": "ValueError: size 3 variables and 101 constraints is too large",
+    "THURBERLS": "has no constraints beyond fixed variables",
+    "TOINTGOR": "has no constraints beyond fixed variables",
+    "TOINTGSS": "has no constraints beyond fixed variables",
+    "TOINTPSP": "has no constraints beyond fixed variables",
+    "TOINTQOR": "has no constraints beyond fixed variables",
+    "TQUARTIC": "has no constraints beyond fixed variables",
+    "TRIDIA": "has no constraints beyond fixed variables",
+    "TRIGON1": "has no constraints beyond fixed variables",
+    "TRIGON2": "has no constraints beyond fixed variables",
+    "TWIRIBG1": "too many variables",
+    "TWIRIMD1": "too many variables",
+    "UBH5": "ValueError: size 110 variables and 70 constraints is too large",
+    "VARDIM": "has no constraints beyond fixed variables",
+    "VAREIGVL": "has no constraints beyond fixed variables",
+    "VESUVIA": "too many constraints",
+    "VESUVIALS": "has no constraints beyond fixed variables",
+    "VESUVIO": "too many constraints",
+    "VESUVIOLS": "has no constraints beyond fixed variables",
+    "VESUVIOU": "too many constraints",
+    "VESUVIOULS": "has no constraints beyond fixed variables",
+    "VIBRBEAM": "has no constraints beyond fixed variables",
+    "VIBRBEAMNE": "ValueError: Jacobian differs from finite differences by 2.8e+04",
+    "WATER": "TypeError: float() argument must be a string or a real number, not 'complex'",
+    "WATSON": "has no constraints beyond fixed variables",
+    "WAYSEA1": "has no constraints beyond fixed variables",
+    "WOODS": "has no constraints beyond fixed variables",
+    "YATP1CLS": "has no constraints beyond fixed variables",
+    "YATP1LS": "has no constraints beyond fixed variables",
+    "YATP2CLS": "has no constraints beyond fixed variables",
+    "YATP2LS": "has no constraints beyond fixed variables",
+    "YFITU": "has no constraints beyond fixed variables",
+    "YORKNET": "too many variables",
+    "ZAMB2": "ValueError: size 270 variables and 96 constraints is too large",
+    "ZAMB2m10": "too many variables",
+    "ZAMB2m11": "too many variables",
+    "ZAMB2m8": "too many variables",
+    "ZAMB2m9": "too many variables",
+    "ZANGWIL2": "has no constraints beyond fixed variables",
+    "n10FOLDTRLS": "has no constraints beyond fixed variables"
+  }
+}

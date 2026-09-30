@@ -18,7 +18,7 @@ import numpy as np
 
 from ..processes import run_in_processes
 from .fetch import COMMIT, PROBLEM_DIRECTORY, is_fetched
-from .problems import load_problem
+from .problems import load_problem, objective_and_gradient, objective_value
 
 
 SELECTION_PATH = Path(__file__).parent / "selection.json"
@@ -127,14 +127,14 @@ def check_problem(name: str) -> tuple[int, int]:
     shifted = np.clip(x0 + 0.1 * (1.0 + np.abs(x0)) * rng.normal(size=n), lower, upper)
 
     def objective(x):
-        return np.asarray(problem.fx(x.reshape(n, 1)), dtype=float).reshape(1)
+        return np.array([objective_value(problem, x.reshape(n, 1))])
 
     def constraints(x):
         return np.asarray(problem.cx(x.reshape(n, 1)), dtype=float).ravel()
 
     for point in (x0, shifted):
-        _, gradient = problem.fgx(point.reshape(n, 1))
-        gradient = np.asarray(gradient, dtype=float).reshape(1, n)
+        _, gradient = objective_and_gradient(problem, point.reshape(n, 1))
+        gradient = gradient.reshape(1, n)
         checks = [("gradient", gradient, _central_differences(objective, point, 1))]
         if m > 0:
             values, jacobian = problem.cJx(point.reshape(n, 1))
