@@ -545,6 +545,33 @@ _CONFIGURATION_LIST: list[Configuration] = [
         ),
     ),
     AulaxConfiguration(
+        name="gradient_keep_unless_penalty_floor",
+        description="As gradient_keep_unless_penalty, with an initial penalty of at "
+        "least one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+            inner_state_access=alx.OptimistixStateAccess(
+                hessian_reuse="keep_unless_penalty_increased"
+            ),
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
+        ),
+    ),
+    AulaxConfiguration(
+        name="gradient_keep_unless_penalty_fixed",
+        description="As gradient_keep_unless_penalty, with an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.BFGS(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+            inner_state_access=alx.OptimistixStateAccess(
+                hessian_reuse="keep_unless_penalty_increased"
+            ),
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
+    AulaxConfiguration(
         name="lbfgs_gradient_keep_unless_penalty",
         description="L-BFGS with gradient stopping and conditional Hessian reuse.",
         solver=alx.AugmentedLagrangian(

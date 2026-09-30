@@ -158,6 +158,14 @@ class AlgencanPenaltyUpdate(eqx.Module):
     """Whether every constraint element has its own penalty."""
     initial_value: float | None = None
     """The initial penalty. `None` selects the ALGENCAN formula."""
+    initial_value_range: tuple[float, float] = (1e-8, 1e8)
+    """The range the ALGENCAN formula is clipped to.
+
+    A problem that starts far from feasible gets a small initial penalty from
+    the formula. If its objective is unbounded outside the feasible set, a
+    penalty that small cannot stop the first inner solve from diverging, and a
+    larger lower end prevents that.
+    """
     maximum_value: float | None = None
     r"""The largest penalty. `None` selects $10^{12}$ in float64 and $10^{6}$ in
     float32."""
@@ -173,7 +181,7 @@ class AlgencanPenaltyUpdate(eqx.Module):
             )
             value = 10.0 * jnp.maximum(1.0, jnp.abs(evaluation.objective))
             value = value / jnp.maximum(1.0, squared_violation)
-            value = jnp.clip(value, 1e-8, 1e8)
+            value = jnp.clip(value, *self.initial_value_range)
         else:
             value = jnp.asarray(self.initial_value)
         value = value.astype(_constraint_dtype(evaluation))
