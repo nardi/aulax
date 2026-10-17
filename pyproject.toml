@@ -15,6 +15,9 @@ dependencies = [
     "optimistix>=0.1.0",
 ]
 
+[project.optional-dependencies]
+sparse = ["asdex>=0.5.1", "splineax>=0.4.0"]
+
 [project.urls]
 Documentation = "https://nardi.github.io/aulax"
 Repository = "https://github.com/nardi/aulax"
@@ -32,6 +35,10 @@ bench = [
 ]
 ipopt = [
     "cyipopt>=1.7.0",
+]
+sparse = [
+    "asdex>=0.5.1",
+    "splineax>=0.4.0",
 ]
 
 [tool.ruff]

@@ -37,3 +37,27 @@
 ::: aulax.ToleranceSchedule
 
 ::: aulax.GeometricToleranceSchedule
+
+## Inner solves
+
+::: aulax.NewtonTrustRegion
+
+::: aulax.SparseNewton
+
+::: aulax.InnerStoppingRule
+
+::: aulax.MinimiserStopping
+
+::: aulax.GradientStopping
+
+::: aulax.InnerStateAccess
+
+::: aulax.OptimistixStateAccess
+
+## Scaling
+
+::: aulax.ProblemScaling
+
+::: aulax.GradientScaling
+
+::: aulax.Scaling

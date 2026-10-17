@@ -13,10 +13,16 @@ from ._inner import (
     OptimistixStateAccess as OptimistixStateAccess,
 )
 from ._minimise import minimise as minimise
+from ._newton import NewtonTrustRegion as NewtonTrustRegion
 from ._problem import (
     Constraints as Constraints,
     Evaluation as Evaluation,
     ProblemFunction as ProblemFunction,
+)
+from ._scaling import (
+    GradientScaling as GradientScaling,
+    ProblemScaling as ProblemScaling,
+    Scaling as Scaling,
 )
 from ._solution import (
     RESULTS as RESULTS,
@@ -24,6 +30,7 @@ from ._solution import (
     Statistics as Statistics,
 )
 from ._solver import AugmentedLagrangian as AugmentedLagrangian
+from ._sparse_newton import SparseNewton as SparseNewton
 from ._updates import (
     AlgencanPenaltyUpdate as AlgencanPenaltyUpdate,
     GeometricToleranceSchedule as GeometricToleranceSchedule,

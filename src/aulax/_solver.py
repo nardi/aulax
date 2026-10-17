@@ -12,6 +12,7 @@ from ._inner import (
     OptimistixStateAccess,
 )
 from ._misc import dtype_default
+from ._scaling import ProblemScaling
 from ._updates import (
     AlgencanPenaltyUpdate,
     GeometricToleranceSchedule,
@@ -69,11 +70,26 @@ class AugmentedLagrangian(eqx.Module):
     Without it, the solver takes one more inner step to learn the constraint
     values at the inner solution.
     """
+    scaling: ProblemScaling | None = None
+    """The rule that rescales the objective and constraints before the solve.
+
+    `None` solves the problem as given. `GradientScaling` rescales by the gradients
+    at `y0`, which helps when the constraints differ widely in magnitude. The
+    feasibility tolerance, the multipliers and the statistics of the solution
+    always refer to the original problem.
+    """
     inner_max_steps: int = 256
     """The number of steps after which an inner solve counts as finished.
 
     Reaching it is not an error. The multipliers are updated from the last point,
     and the next inner solve continues from there.
+    """
+    verbose: bool = eqx.field(default=False, static=True)
+    """Whether to print one line per outer iteration.
+
+    The line shows the iteration, the number of inner steps, the objective, the
+    infeasibility, the stationarity if the inner solver provides it, the largest
+    penalty and the inner tolerance.
     """
 
     def feasibility_tolerance_for(self, dtype: DTypeLike) -> float:

@@ -150,6 +150,23 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     objective_gradient, evaluation0 = jax.grad(objective_with_evaluation, has_aux=True)(
         y0
     )
+    raw_problem = problem
+    if solver.scaling is None:
+        scaling = None
+    else:
+        scaling = jax.lax.stop_gradient(
+            solver.scaling.scale_factors(
+                problem, y0, args, state, evaluation0, objective_gradient
+            )
+        )
+
+        def problem(y: Y, args: Args, state: State) -> Evaluation:
+            return scaling.scale_evaluation(raw_problem(y, args, state))
+
+        evaluation0 = scaling.scale_evaluation(evaluation0)
+        objective_gradient = jax.tree.map(
+            lambda leaf: leaf * scaling.objective, objective_gradient
+        )
     gradient_scale = jax.lax.stop_gradient(
         jnp.maximum(1.0, tree_max_norm(objective_gradient))
     )
@@ -160,6 +177,17 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             equality=tree_full_like(evaluation0.equality, 0.0),
             inequality=tree_full_like(evaluation0.inequality, 0.0),
         )
+    elif scaling is not None:
+        multipliers = scaling.scale_multipliers(multipliers)
+
+    def user_evaluation(evaluation: Evaluation) -> Evaluation:
+        """Return `evaluation` in the units of the original problem."""
+        return evaluation if scaling is None else scaling.unscale_evaluation(evaluation)
+
+    def user_multipliers(estimates: Constraints) -> Constraints:
+        """Return `estimates` in the units of the original problem."""
+        return estimates if scaling is None else scaling.unscale_multipliers(estimates)
+
     safeguarded_multipliers = solver.multiplier_update.safeguard_multipliers(
         multipliers, evaluation0
     )
@@ -269,7 +297,9 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         converged = (
             solver.is_final_tolerance(loop.inner_tolerance)
             & (
-                kkt_infeasibility(evaluation, estimates)
+                kkt_infeasibility(
+                    user_evaluation(evaluation), user_multipliers(estimates)
+                )
                 <= solver.feasibility_tolerance_for(objective.dtype)
             )
             & stationary
@@ -310,6 +340,35 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             result=RESULTS.where(infeasible, RESULTS.infeasible, loop.result),
         )
 
+    def print_outer_update(
+        stepped: _LoopState,
+        updated: _LoopState,
+        evaluation: Evaluation,
+        gradient: PyTree[Array] | None,
+    ) -> None:
+        """Print one line about the outer update, if the inner solve has ended."""
+        stationarity = (
+            jnp.asarray(jnp.nan) if gradient is None else tree_max_norm(gradient)
+        )
+
+        def print_line() -> None:
+            jax.debug.print(
+                "outer {outer:3d}  inner steps {steps:4d}  f {f:+.6e}  "
+                "infeasibility {infeasibility:.2e}  stationarity {stationarity:.2e}  "
+                "penalty {penalty:.1e}  tolerance {tolerance:.1e}",
+                outer=updated.num_outer_steps,
+                steps=stepped.inner_steps,
+                f=evaluation.objective,
+                infeasibility=kkt_infeasibility(
+                    evaluation, updated.multiplier_estimates
+                ),
+                stationarity=stationarity,
+                penalty=tree_max_norm(updated.penalty),
+                tolerance=stepped.inner_tolerance,
+            )
+
+        jax.lax.cond(stepped.update_pending, print_line, lambda: None)
+
     def body(loop: _LoopState) -> _LoopState:
         """Run one loop iteration, which always calls the inner `step` once.
 
@@ -328,6 +387,8 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             gradient = solver.inner_state_access.accepted_gradient(new_inner_state)
             stepped = eqx.tree_at(lambda loop: loop.evaluation, stepped, accepted)
             updated = outer_update(stepped, accepted, gradient)
+            if solver.verbose:
+                print_outer_update(stepped, updated, accepted, gradient)
             new_loop = tree_where(stepped.update_pending, updated, stepped)
         return eqx.tree_at(lambda loop: loop.num_steps, new_loop, loop.num_steps + 1)
 
@@ -364,30 +425,33 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         loop.result,
     )
 
+    final_multipliers = user_multipliers(loop.multiplier_estimates)
+    final_evaluation = user_evaluation(loop.evaluation)
+
     def solution_lagrangian(y: Y) -> Scalar:
-        evaluation = problem(y, args, jax.lax.stop_gradient(loop.evaluation.state))
-        return lagrangian(evaluation, loop.multiplier_estimates)
+        evaluation = raw_problem(y, args, jax.lax.stop_gradient(loop.evaluation.state))
+        return lagrangian(evaluation, final_multipliers)
 
     stationarity = tree_max_norm(jax.grad(solution_lagrangian)(loop.y))
     # An inequality constraint counts as active when its multiplier is positive.
     # A constraint that holds with equality but has a zero multiplier is treated
     # as inactive, which is one of the valid derivatives at such a point.
     active = jax.tree.map(
-        lambda multiplier: multiplier > 0.0, loop.multiplier_estimates.inequality
+        lambda multiplier: multiplier > 0.0, final_multipliers.inequality
     )
     outputs = _SolveOutputs(
-        evaluation=loop.evaluation,
+        evaluation=final_evaluation,
         active=active,
         result=result,
         stats=Statistics(
             num_steps=loop.num_steps,
             num_outer_steps=loop.num_outer_steps,
             penalty=loop.penalty,
-            infeasibility=kkt_infeasibility(loop.evaluation, loop.multiplier_estimates),
+            infeasibility=kkt_infeasibility(final_evaluation, final_multipliers),
             stationarity=stationarity,
         ),
     )
-    return (loop.y, loop.multiplier_estimates), outputs
+    return (loop.y, final_multipliers), outputs
 
 
 def _kkt_residual(
