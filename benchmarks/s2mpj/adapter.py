@@ -7,6 +7,10 @@ and a callback cannot compute a transposable tangent itself. The adapter
 therefore uses `jax.custom_jvp`. Its rule fetches the gradient and a dense
 Jacobian through a second callback, and computes the tangent with `jnp`
 operations, which are linear in the tangent and so can be transposed.
+
+A minimiser that uses exact Hessians differentiates the gradient and the
+Jacobian once more. They come from a second `jax.custom_jvp` function, whose
+rule fetches the dense Hessian of the objective and of every constraint.
 """
 
 import jax
@@ -55,6 +59,26 @@ def _values_and_derivatives(problem: S2mpjProblem, has_constraints: bool):
         return objective, gradient, constraints, jacobian
 
     return values, derivatives
+
+
+def _second_derivatives(problem: S2mpjProblem, has_constraints: bool):
+    """Return a NumPy function for the Hessians of the objective and constraints."""
+    size = int(problem.n)
+    constraint_count = int(getattr(problem, "m", 0)) if has_constraints else 0
+
+    def second_derivatives(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        column = np.asarray(x, dtype=float).reshape(size, 1)
+        if has_objective(problem):
+            objective_hessian = _dense(problem.fgHx(column)[2]).reshape(size, size)
+        else:
+            objective_hessian = np.zeros((size, size))
+        constraint_hessians = np.zeros((constraint_count, size, size))
+        if has_constraints:
+            for index, hessian in enumerate(problem.cJHx(column)[2]):
+                constraint_hessians[index] = _dense(hessian).reshape(size, size)
+        return objective_hessian, constraint_hessians
+
+    return second_derivatives
 
 
 def _lagrangian_hessian(problem: S2mpjProblem, mapping: ConstraintMapping):
@@ -118,10 +142,15 @@ def adapted_problem(name: str, *arguments: object) -> BenchmarkProblem:
     size = int(problem.n)
     constraint_count = int(getattr(problem, "m", 0))
     values, derivatives = _values_and_derivatives(problem, constraint_count > 0)
+    second_derivatives = _second_derivatives(problem, constraint_count > 0)
     scalar = jax.ShapeDtypeStruct((), jnp.float64)
     vector = jax.ShapeDtypeStruct((size,), jnp.float64)
     constraint_vector = jax.ShapeDtypeStruct((constraint_count,), jnp.float64)
     jacobian_matrix = jax.ShapeDtypeStruct((constraint_count, size), jnp.float64)
+    hessian_matrix = jax.ShapeDtypeStruct((size, size), jnp.float64)
+    constraint_hessians = jax.ShapeDtypeStruct(
+        (constraint_count, size, size), jnp.float64
+    )
 
     @jax.custom_jvp
     def objective_and_constraints(x):
@@ -129,16 +158,39 @@ def adapted_problem(name: str, *arguments: object) -> BenchmarkProblem:
             values, (scalar, constraint_vector), x, vmap_method="sequential"
         )
 
-    @objective_and_constraints.defjvp
-    def objective_and_constraints_jvp(primals, tangents):
-        (x,) = primals
-        (tangent,) = tangents
-        objective, gradient, constraints, jacobian = jax.pure_callback(
+    @jax.custom_jvp
+    def first_derivatives(x):
+        return jax.pure_callback(
             derivatives,
             (scalar, vector, constraint_vector, jacobian_matrix),
             x,
             vmap_method="sequential",
         )
+
+    @first_derivatives.defjvp
+    def first_derivatives_jvp(primals, tangents):
+        (x,) = primals
+        (tangent,) = tangents
+        objective_hessian, constraint_hessian_tensor = jax.pure_callback(
+            second_derivatives,
+            (hessian_matrix, constraint_hessians),
+            x,
+            vmap_method="sequential",
+        )
+        primal_output = first_derivatives(x)
+        _, gradient, _, jacobian = primal_output
+        return primal_output, (
+            gradient @ tangent,
+            objective_hessian @ tangent,
+            jacobian @ tangent,
+            jnp.einsum("mij,j->mi", constraint_hessian_tensor, tangent),
+        )
+
+    @objective_and_constraints.defjvp
+    def objective_and_constraints_jvp(primals, tangents):
+        (x,) = primals
+        (tangent,) = tangents
+        objective, gradient, constraints, jacobian = first_derivatives(x)
         return (objective, constraints), (gradient @ tangent, jacobian @ tangent)
 
     def s2mpj_problem(y, args, state):
