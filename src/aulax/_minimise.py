@@ -24,7 +24,7 @@ class _InnerArgs(eqx.Module, Generic[Args, State]):
     """The `args` of the augmented Lagrangian that the inner solver minimizes."""
 
     args: Args
-    """The user's `args`."""
+    """The user's `args`, bundled with the scaling factors when there is a scaling."""
     state: State
     """The problem state to pass to the next evaluation."""
     multipliers: Constraints
@@ -151,6 +151,11 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         y0
     )
     raw_problem = problem
+    # The inner solver calls the problem with these `args`. The scaling factors
+    # travel in them and not in a closure, so that a tool that analyzes the
+    # problem, like the sparsity detection of `SparseNewton`, can substitute sample
+    # values for them.
+    inner_user_args = args
     if solver.scaling is None:
         scaling = None
     else:
@@ -159,9 +164,11 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
                 problem, y0, args, state, evaluation0, objective_gradient
             )
         )
+        inner_user_args = (args, scaling)
 
-        def problem(y: Y, args: Args, state: State) -> Evaluation:
-            return scaling.scale_evaluation(raw_problem(y, args, state))
+        def problem(y: Y, bundled_args: Any, state: State) -> Evaluation:
+            user_args, factors = bundled_args
+            return factors.scale_evaluation(raw_problem(y, user_args, state))
 
         evaluation0 = scaling.scale_evaluation(evaluation0)
         objective_gradient = jax.tree.map(
@@ -197,7 +204,9 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     )
 
     inner_function = _inner_function(problem)
-    inner_args0 = _InnerArgs(args, evaluation0.state, safeguarded_multipliers, penalty)
+    inner_args0 = _InnerArgs(
+        inner_user_args, evaluation0.state, safeguarded_multipliers, penalty
+    )
     f_struct, aux_struct = jax.eval_shape(inner_function, y0, inner_args0)
     inner_state0 = solver.inner.init(
         inner_function, y0, inner_args0, options, f_struct, aux_struct, tags
@@ -222,7 +231,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         """
         inner = solver.inner_at_tolerance(loop.inner_tolerance)
         inner_args = _InnerArgs(
-            args, loop.evaluation.state, loop.multipliers, loop.penalty
+            inner_user_args, loop.evaluation.state, loop.multipliers, loop.penalty
         )
         inner_state = eqx.combine(loop.inner_state, static_inner_state)
         new_y, new_inner_state, evaluation = inner.step(
@@ -310,7 +319,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             solver.final_inner_tolerance(),
         )
         new_inner_args = _InnerArgs(
-            args, evaluation.state, new_multipliers, new_penalty
+            inner_user_args, evaluation.state, new_multipliers, new_penalty
         )
         fresh_inner_state = eqx.combine(
             reinitialize_inner_state(loop.y, new_inner_args), static_inner_state

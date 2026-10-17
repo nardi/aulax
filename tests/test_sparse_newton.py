@@ -82,3 +82,22 @@ def test_augmented_lagrangian_with_sparse_inner_solves():
     dense = alx.minimise(pendulum_like, dense_solver, y0, max_steps=3000)
     np.testing.assert_allclose(sparse.value, dense.value, atol=1e-5)
     assert sparse.stats.infeasibility <= 1e-6
+
+
+@requires_sparse_libraries
+def test_sparse_inner_solves_work_with_gradient_scaling():
+    # The scaling factors reach the problem through its `args`, which is what lets
+    # the sparsity detection substitute sample values for them.
+    solver = alx.AugmentedLagrangian(
+        inner=alx.SparseNewton(rtol=1e-10, atol=1e-10),
+        stationarity_tolerance=1e-6,
+        scaling=alx.GradientScaling(limit=1.0),
+    )
+    reference = alx.AugmentedLagrangian(
+        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        stationarity_tolerance=1e-6,
+    )
+    y0 = jnp.zeros(40)
+    scaled = alx.minimise(pendulum_like, solver, y0, max_steps=3000)
+    plain = alx.minimise(pendulum_like, reference, y0, max_steps=3000)
+    np.testing.assert_allclose(scaled.value, plain.value, atol=1e-5)
