@@ -92,6 +92,16 @@ def test_per_constraint_penalty_grows_elementwise():
     np.testing.assert_allclose(new_penalty.inequality, [1.0, 10.0])
 
 
+def test_penalty_does_not_grow_below_the_infeasibility_floor():
+    update = AlgencanPenaltyUpdate(infeasibility_floor=1e-6)
+    penalty = constraints([1.0, 1.0], [1.0, 1.0])
+    # The infeasibility did not halve, but it is already at rounding level.
+    previous = constraints([1e-9, 1e-9], [1e-9, 1e-9])
+    same, stalled = update.update_penalty(penalty, previous, previous)
+    np.testing.assert_allclose(same.equality, [1.0, 1.0])
+    assert not stalled
+
+
 def test_penalty_stops_at_maximum_and_reports_stall():
     update = AlgencanPenaltyUpdate(maximum_value=5.0)
     previous = constraints([1.0, 1.0], [1.0, 1.0])

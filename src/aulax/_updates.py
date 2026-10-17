@@ -169,6 +169,13 @@ class AlgencanPenaltyUpdate(eqx.Module):
     maximum_value: float | None = None
     r"""The largest penalty. `None` selects $10^{12}$ in float64 and $10^{6}$ in
     float32."""
+    infeasibility_floor: float = 1e-10
+    """The penalty only grows where the infeasibility is above this value.
+
+    An infeasibility at the level of rounding errors cannot keep halving. Without
+    a floor, the penalty of a problem that is already feasible would grow to its
+    maximum, and the solver would report it as infeasible.
+    """
 
     def initial_penalty(self, evaluation: Evaluation) -> Constraints:
         """Return the initial penalty for every constraint element."""
@@ -204,16 +211,29 @@ class AlgencanPenaltyUpdate(eqx.Module):
             else self.maximum_value
         )
         if self.per_constraint:
-            grow = jax.tree.map(
+            stagnated = jax.tree.map(
                 lambda current, previous: current > self.decrease_factor * previous,
                 infeasibility,
                 previous_infeasibility,
             )
+            above_floor = jax.tree.map(
+                lambda current: current > self.infeasibility_floor, infeasibility
+            )
         else:
-            grow_all = tree_max_norm(
-                infeasibility
-            ) > self.decrease_factor * tree_max_norm(previous_infeasibility)
-            grow = jax.tree.map(lambda _: grow_all, infeasibility)
+            largest = tree_max_norm(infeasibility)
+            stagnated_all = largest > self.decrease_factor * tree_max_norm(
+                previous_infeasibility
+            )
+            stagnated = jax.tree.map(lambda _: stagnated_all, infeasibility)
+            above_floor = jax.tree.map(
+                lambda _: largest > self.infeasibility_floor, infeasibility
+            )
+        # The penalty only grows where the infeasibility is above the floor.
+        grow = jax.tree.map(
+            lambda stagnated_element, above_element: stagnated_element & above_element,
+            stagnated,
+            above_floor,
+        )
         new_penalty = jax.tree.map(
             lambda rho, grow_element: jnp.where(
                 grow_element, jnp.minimum(self.growth_factor * rho, maximum), rho
@@ -221,10 +241,13 @@ class AlgencanPenaltyUpdate(eqx.Module):
             penalty,
             grow,
         )
+        # A penalty at its maximum cannot grow, so a stagnating infeasibility
+        # there ends the solve even when it is below the floor. Otherwise a solve
+        # that is feasible but not stationary would run to the step limit.
         stalled = jax.tree.map(
-            lambda rho, grow_element: grow_element & (rho >= maximum),
+            lambda rho, stagnated_element: stagnated_element & (rho >= maximum),
             penalty,
-            grow,
+            stagnated,
         )
         return new_penalty, tree_any(stalled)
 
