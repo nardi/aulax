@@ -244,7 +244,10 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         inner_steps = loop.inner_steps + 1
         inner_converged = solver.inner_stopping.is_inner_converged(
             solver.inner_state_access.accepted_gradient(new_inner_state),
-            loop.inner_tolerance,
+            jnp.maximum(
+                loop.inner_tolerance,
+                solver.gradient_noise_floor(loop.penalty, objective.dtype),
+            ),
             gradient_scale,
             inner_terminate,
         )
@@ -293,6 +296,16 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         new_penalty, penalty_stalled = solver.penalty_update.update_penalty(
             loop.penalty, infeasibility, loop.previous_infeasibility
         )
+        kkt = kkt_infeasibility(
+            user_evaluation(evaluation), user_multipliers(estimates)
+        )
+        feasibility_tolerance = solver.feasibility_tolerance_for(objective.dtype)
+        # A problem that is feasible to well below the tolerance keeps its penalty.
+        new_penalty = tree_where(
+            kkt <= solver.penalty_freeze_fraction * feasibility_tolerance,
+            loop.penalty,
+            new_penalty,
+        )
         new_multipliers = solver.multiplier_update.safeguard_multipliers(
             estimates, evaluation
         )
@@ -301,16 +314,15 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         else:
             stationary = (
                 tree_max_norm(gradient)
-                <= solver.stationarity_tolerance * gradient_scale
+                <= jnp.maximum(
+                    solver.stationarity_tolerance,
+                    solver.gradient_noise_floor(loop.penalty, objective.dtype),
+                )
+                * gradient_scale
             )
         converged = (
             solver.is_final_tolerance(loop.inner_tolerance)
-            & (
-                kkt_infeasibility(
-                    user_evaluation(evaluation), user_multipliers(estimates)
-                )
-                <= solver.feasibility_tolerance_for(objective.dtype)
-            )
+            & (kkt <= feasibility_tolerance)
             & stationary
         )
         infeasible = penalty_stalled & jnp.invert(converged)

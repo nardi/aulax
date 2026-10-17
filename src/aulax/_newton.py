@@ -190,7 +190,17 @@ class NewtonTrustRegion(optx.AbstractMinimiser):
         )
         ratio = (old.f - f_eval) / jnp.where(predicted > 0, predicted, jnp.inf)
         finite = jnp.isfinite(f_eval)
-        accept = state.first_step | ((ratio > self.accept_ratio) & finite)
+        # Below the rounding level of the function value, the ratio of actual to
+        # predicted decrease is noise. A step that lowers the norm of the gradient
+        # is then accepted, since otherwise the radius shrinks until the solve stalls.
+        noise = 100.0 * jnp.finfo(f_eval.dtype).eps * jnp.maximum(1.0, jnp.abs(old.f))
+        below_noise = (jnp.abs(predicted) < noise) & (jnp.abs(f_eval - old.f) < noise)
+        gradient_decreased = jnp.linalg.norm(gradient_eval) < jnp.linalg.norm(
+            old_gradient
+        )
+        accept = state.first_step | (
+            ((ratio > self.accept_ratio) | (below_noise & gradient_decreased)) & finite
+        )
 
         trial_length = jnp.linalg.norm(trial_step)
         # After a poor step, shrink to where a quadratic fitted to the value, the

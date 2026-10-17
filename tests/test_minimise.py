@@ -212,3 +212,31 @@ def test_hessian_reuse_keeps_solution(hessian_reuse, inner):
 def test_hessian_reuse_rejects_unknown_option():
     with pytest.raises(ValueError, match="hessian_reuse"):
         alx.OptimistixStateAccess(hessian_reuse="sometimes")
+
+
+def test_gradient_noise_floor_scales_with_the_penalty():
+    solver = alx.AugmentedLagrangian(
+        inner=optx.BFGS(rtol=1e-8, atol=1e-8), gradient_noise_factor=1e3
+    )
+    penalty = alx.Constraints(equality=jnp.array([1.0, 1e6]), inequality=None)
+    floor = solver.gradient_noise_floor(penalty, jnp.float64)
+    np.testing.assert_allclose(floor, 1e3 * np.finfo(np.float64).eps * 1e6)
+
+
+def test_penalty_stays_when_the_problem_is_feasible_to_well_below_the_tolerance():
+    # A linear equality constraint with a quadratic objective is solved exactly by
+    # one Newton step, so the infeasibility is at rounding level after the first
+    # outer iteration and the penalty has no reason to grow.
+    def problem(y, args, state):
+        return alx.Evaluation(
+            objective=jnp.sum((y - 3.0) ** 2), equality=jnp.sum(y) - 1.0
+        )
+
+    solver = alx.AugmentedLagrangian(
+        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        penalty_update=alx.AlgencanPenaltyUpdate(initial_value=2.0),
+        stationarity_tolerance=1e-6,
+    )
+    solution = alx.minimise(problem, solver, jnp.zeros(3))
+    np.testing.assert_allclose(solution.value, [1 / 3] * 3, atol=1e-6)
+    np.testing.assert_allclose(solution.stats.penalty.equality, 2.0)

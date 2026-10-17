@@ -11,7 +11,8 @@ from ._inner import (
     MinimiserStopping,
     OptimistixStateAccess,
 )
-from ._misc import dtype_default
+from ._misc import dtype_default, tree_max_norm
+from ._problem import Constraints
 from ._scaling import ProblemScaling
 from ._updates import (
     AlgencanPenaltyUpdate,
@@ -84,6 +85,24 @@ class AugmentedLagrangian(eqx.Module):
     Reaching it is not an error. The multipliers are updated from the last point,
     and the next inner solve continues from there.
     """
+    penalty_freeze_fraction: float = 0.1
+    r"""The penalty stops growing when the infeasibility is this fraction of its
+    tolerance.
+
+    The infeasibility is the largest violation of feasibility or complementarity.
+    A problem that is feasible to well below `feasibility_tolerance` gains nothing
+    from a larger penalty, and the penalty only makes the inner problems harder.
+    The multipliers keep updating. Zero turns the rule off.
+    """
+    gradient_noise_factor: float = 1e3
+    r"""How far above rounding errors the tolerances on the gradient are kept.
+
+    The gradient of the augmented Lagrangian contains the penalty times the
+    constraint residuals, and so it carries rounding errors of about the machine
+    epsilon times the penalty. The inner tolerance and `stationarity_tolerance` are
+    raised to this factor times that, so that a solve with a large penalty can still
+    end. Zero turns the rule off.
+    """
     verbose: bool = eqx.field(default=False, static=True)
     """Whether to print one line per outer iteration.
 
@@ -97,6 +116,12 @@ class AugmentedLagrangian(eqx.Module):
         if self.feasibility_tolerance is None:
             return dtype_default(dtype, 1e-6, 1e-3)
         return self.feasibility_tolerance
+
+    def gradient_noise_floor(self, penalty: Constraints, dtype: DTypeLike) -> Scalar:
+        """Return the smallest tolerance on the gradient that rounding errors allow."""
+        return (
+            self.gradient_noise_factor * jnp.finfo(dtype).eps * tree_max_norm(penalty)
+        )
 
     def final_inner_tolerance(self) -> Scalar:
         """Return the tolerance at which the inner tolerance schedule ends."""
