@@ -8,12 +8,12 @@ from jaxtyping import ArrayLike, Bool, DTypeLike, Scalar
 from ._inner import (
     InnerStateAccess,
     InnerStoppingRule,
-    MinimiserStopping,
     OptimistixStateAccess,
 )
 from ._misc import dtype_default, tree_max_norm
+from ._newton import Newton
 from ._problem import Constraints
-from ._scaling import ProblemScaling
+from ._scaling import GradientScaling, ProblemScaling
 from ._updates import (
     AlgencanPenaltyUpdate,
     GeometricToleranceSchedule,
@@ -33,7 +33,7 @@ class AugmentedLagrangian(eqx.Module):
     `atol` of `inner`, and the constraints hold to `feasibility_tolerance`.
     """
 
-    inner: optx.AbstractMinimiser
+    inner: optx.AbstractMinimiser = Newton()
     """The minimiser for the inner solves.
 
     Its `rtol` and `atol` are the tolerances of the last inner solve. Earlier
@@ -54,16 +54,23 @@ class AugmentedLagrangian(eqx.Module):
     """The rule that sets and grows the penalty."""
     tolerance_schedule: ToleranceSchedule = GeometricToleranceSchedule()
     """The rule that sets the tolerance of each inner solve."""
-    stationarity_tolerance: float = math.inf
+    stationarity_tolerance: float | None = None
     r"""The bound on the gradient of the Lagrangian at the solution.
 
     The solve only stops when the largest element of $\nabla_y L$ is at most this
     tolerance times the largest element of the objective gradient at `y0`, or
     one if that is smaller. This check needs the gradient from the inner solver,
-    see `inner_state_access`. The default of infinity turns it off.
+    see `inner_state_access`. `None` selects $10^{-6}$ for the `Newton` minimiser,
+    which converges that far, and turns the check off for other minimisers, whose
+    stopping tests do not reach it. Infinity turns the check off.
     """
-    inner_stopping: InnerStoppingRule = MinimiserStopping()
-    """The rule that decides when an inner solve is finished."""
+    inner_stopping: InnerStoppingRule | None = None
+    """The rule that decides when an inner solve is finished.
+
+    `None` uses the stopping test of the inner minimiser, and the gradient test when
+    the minimiser takes inexact steps, which is the case for the matrix-free mode of
+    `Newton`.
+    """
     inner_state_access: InnerStateAccess = OptimistixStateAccess()
     """Reads the evaluation and gradient at the accepted point of the inner solver.
 
@@ -71,7 +78,7 @@ class AugmentedLagrangian(eqx.Module):
     Without it, the solver takes one more inner step to learn the constraint
     values at the inner solution.
     """
-    scaling: ProblemScaling | None = None
+    scaling: ProblemScaling | None = GradientScaling()
     """The rule that rescales the objective and constraints before the solve.
 
     `None` solves the problem as given. `GradientScaling` rescales by the gradients
@@ -110,6 +117,12 @@ class AugmentedLagrangian(eqx.Module):
     infeasibility, the stationarity if the inner solver provides it, the largest
     penalty and the inner tolerance.
     """
+
+    def stationarity_tolerance_for_inner(self) -> float:
+        """Return `stationarity_tolerance`, or its default for the inner minimiser."""
+        if self.stationarity_tolerance is not None:
+            return self.stationarity_tolerance
+        return 1e-6 if isinstance(self.inner, Newton) else math.inf
 
     def feasibility_tolerance_for(self, dtype: DTypeLike) -> float:
         """Return `feasibility_tolerance`, or its default for `dtype`."""

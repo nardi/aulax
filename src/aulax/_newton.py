@@ -4,16 +4,36 @@ from typing import Any
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import lineax as lx
 import optimistix as optx
 from jax.flatten_util import ravel_pytree
 from jaxtyping import Array, Bool, Float, PyTree, Scalar
 
+from ._hessian import AutoHessian, HessianStrategy, PreparedHessian
 from ._misc import tree_where
 
 
+class _Prepared:
+    """Holds a prepared Hessian in a static field.
+
+    The prepared Hessian is created when the solver is traced and describes
+    structure only, like a sparsity pattern, so it stays out of the traced state.
+    The solver loop initializes the inner state more than once for the same problem,
+    and the results describe the same structure, so all instances compare equal.
+    """
+
+    def __init__(self, value: PreparedHessian):
+        self.value = value
+        """The prepared Hessian."""
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, _Prepared)
+
+    def __hash__(self) -> int:
+        return 0
+
+
 class _NewtonInfo(eqx.Module):
-    """The value, gradient and Hessian of the function at the accepted point.
+    """The value and gradient at the accepted point.
 
     The field names match the ones of the optimistix quasi-Newton minimisers,
     which is where `OptimistixStateAccess` looks for the gradient.
@@ -23,19 +43,19 @@ class _NewtonInfo(eqx.Module):
     """The function value."""
     grad: PyTree[Float[Array, "..."]]
     """The gradient, shaped like `y`."""
-    hessian: lx.MatrixLinearOperator
-    """The Hessian, as a dense matrix over the flattened `y`."""
 
 
 class _NewtonState(eqx.Module):
-    """The state of `NewtonTrustRegion` between steps."""
+    """The state of `Newton` between steps."""
 
+    f_info: _NewtonInfo
+    """The function value and gradient at the last accepted point."""
+    hessian: Float[Array, "..."]
+    """The data of the Hessian at the last accepted point."""
     first_step: Bool[Array, ""]
     """Whether the next evaluation is the first one, which is always accepted."""
     y_eval: PyTree[Float[Array, "..."]]
     """The trial point that the next step evaluates."""
-    f_info: _NewtonInfo
-    """The function value, gradient and Hessian at the last accepted point."""
     aux: PyTree
     """The aux output at the last accepted point."""
     radius: Scalar
@@ -44,74 +64,38 @@ class _NewtonState(eqx.Module):
     """Whether the last step moved less than the tolerances allow."""
     result: optx.RESULTS
     """The outcome of the solve so far."""
+    prepared: _Prepared = eqx.field(static=True)
+    """The prepared Hessian, with the structure that the strategy detected."""
 
 
-def trust_region_step(
-    hessian: Float[Array, "n n"], gradient: Float[Array, " n"], radius: Scalar
-) -> Float[Array, " n"]:
-    r"""Return the minimizer of the quadratic model within the trust region.
-
-    The model is $g^\top p + \frac{1}{2} p^\top H p$ with
-    $\lVert p \rVert_2 \le \Delta$. The step is the Newton step when $H$ is
-    positive definite and the step fits in the region. Otherwise it is
-    $-(H + \sigma I)^{-1} g$ with the shift $\sigma$ that makes $H + \sigma I$
-    positive definite and the step as long as the radius. An eigendecomposition
-    of $H$ reduces the search for $\sigma$ to a one-dimensional bisection. The
-    case where the gradient is orthogonal to the eigenvector of the smallest
-    eigenvalue is not treated separately, and the step then stops short of the
-    boundary.
-    """
-    eigenvalues, eigenvectors = jnp.linalg.eigh(hessian)
-    projected = eigenvectors.T @ gradient
-    largest = jnp.max(jnp.abs(eigenvalues))
-    # Eigenvalues below this are rounding noise, and count as zero curvature.
-    floor = jnp.finfo(hessian.dtype).eps * largest + jnp.finfo(hessian.dtype).tiny
-
-    def step_length(shift: Scalar) -> Scalar:
-        return jnp.linalg.norm(projected / (eigenvalues + shift))
-
-    positive_definite = eigenvalues[0] > floor
-    newton_fits = positive_definite & (step_length(0.0) <= radius)
-    lower = jnp.maximum(0.0, -eigenvalues[0]) + floor
-    upper = lower + jnp.linalg.norm(gradient) / radius + largest
-
-    def bisect(_, bounds: tuple[Scalar, Scalar]) -> tuple[Scalar, Scalar]:
-        low, high = bounds
-        middle = 0.5 * (low + high)
-        too_long = step_length(middle) > radius
-        return jnp.where(too_long, middle, low), jnp.where(too_long, high, middle)
-
-    low, high = jax.lax.fori_loop(0, 100, bisect, (lower, upper))
-    shift = jnp.where(newton_fits, 0.0, 0.5 * (low + high))
-    return -eigenvectors @ (projected / (eigenvalues + shift))
-
-
-class NewtonTrustRegion(optx.AbstractMinimiser):
+class Newton(optx.AbstractMinimiser):
     """Newton's method with the exact Hessian and a trust region.
 
-    Each step evaluates the function, its gradient and its dense Hessian at the
-    trial point in one pass, using forward-mode differentiation of the reverse-mode
-    gradient. A trial point is accepted when the function decreased by at least
-    `accept_ratio` times the decrease that the quadratic model predicted. The
-    trust radius shrinks after a poor ratio and grows after a good one that
-    reached the boundary.
+    Each step evaluates the function and its gradient at a trial point. A trial
+    point is accepted when the function decreased by at least `accept_ratio` times
+    the decrease that the quadratic model predicted, and at an accepted point the
+    Hessian is computed. The trust radius shrinks after a poor ratio, to the minimum
+    of a quadratic fitted along the step, and grows after a good one that reached
+    the boundary. Below the rounding level of the function value the ratio is noise,
+    and a step that lowers the norm of the gradient is accepted.
 
-    The Hessian is dense and costs one eigendecomposition per accepted step, so
-    this suits problems with up to a few hundred variables. It handles
-    indefinite Hessians through the trust region, and ill-conditioned ones
-    like those of an augmented Lagrangian with a large penalty, because the
-    Newton step is exact in the directions the penalty dominates.
+    How the Hessian is represented and how the step inside the trust region is
+    computed depends on `hessian`: dense linear algebra for small problems, a sparse
+    factorization for large problems with sparse Hessians, and conjugate gradients
+    with Hessian-vector products for the rest. The default chooses between them.
 
     The minimiser stops when the last trial step changed `y` and the function
     value by less than `rtol` and `atol` allow.
     """
 
-    rtol: float
+    rtol: float = 1e-8
     """The relative tolerance of the stopping test."""
-    atol: float
+    atol: float = 1e-8
     """The absolute tolerance of the stopping test."""
     norm: Callable[[PyTree], Scalar] = optx.max_norm
     """The norm in which the change of `y` is measured for the stopping test."""
+    hessian: HessianStrategy = AutoHessian()
+    """How the Hessian is represented and used."""
     initial_radius: float = 10.0
     """The trust radius of the first step."""
     maximum_radius: float = 1e8
@@ -131,22 +115,21 @@ class NewtonTrustRegion(optx.AbstractMinimiser):
     ) -> _NewtonState:
         """Return a state whose first step evaluates the function at `y`."""
         flat_y, _ = ravel_pytree(y)
-        size = flat_y.size
-        f_info = _NewtonInfo(
-            f=jnp.zeros((), f_struct.dtype),
-            grad=jax.tree.map(jnp.zeros_like, y),
-            hessian=lx.MatrixLinearOperator(jnp.zeros((size, size), flat_y.dtype)),
-        )
+        prepared = self.hessian.prepare(fn, y, args)
         return _NewtonState(
+            f_info=_NewtonInfo(
+                f=jnp.zeros((), f_struct.dtype), grad=jax.tree.map(jnp.zeros_like, y)
+            ),
+            hessian=jnp.zeros(prepared.data_shape, flat_y.dtype),
             first_step=jnp.array(True),
             y_eval=y,
-            f_info=f_info,
             aux=jax.tree.map(
                 lambda leaf: jnp.zeros(leaf.shape, leaf.dtype), aux_struct
             ),
             radius=jnp.asarray(self.initial_radius, flat_y.dtype),
             terminate=jnp.array(False),
             result=optx.RESULTS.successful,
+            prepared=_Prepared(prepared),
         )
 
     def step(
@@ -164,35 +147,38 @@ class NewtonTrustRegion(optx.AbstractMinimiser):
         that went into the step, and keeps the one of the accepted point in the
         state.
         """
+        prepared = state.prepared.value
         flat_eval, unravel = ravel_pytree(state.y_eval)
 
-        def gradient_with_values(flat_y: Float[Array, " n"]):
-            (value, aux), gradient = jax.value_and_grad(
-                lambda point: fn(point, args), has_aux=True
-            )(unravel(flat_y))
-            flat_gradient, _ = ravel_pytree(gradient)
-            return flat_gradient, (value, aux, flat_gradient)
+        def with_aux(flat: Array) -> tuple[Scalar, PyTree]:
+            return fn(unravel(flat), args)
 
-        # One pass gives the value, the gradient and the Hessian, so that a trial
-        # point costs one evaluation of the function.
-        hessian_eval, (f_eval, aux_eval, gradient_eval) = jax.jacfwd(
-            gradient_with_values, has_aux=True
-        )(flat_eval)
-        hessian_eval = 0.5 * (hessian_eval + hessian_eval.T)
+        def scalar(flat: Array) -> Scalar:
+            return fn(unravel(flat), args)[0]
+
+        if prepared.fused:
+            f_eval, aux_eval, gradient_eval, hessian_eval = prepared.evaluate_fused(
+                with_aux, flat_eval
+            )
+        else:
+            (f_eval, aux_eval), gradient_eval = jax.value_and_grad(
+                with_aux, has_aux=True
+            )(flat_eval)
 
         flat_y, _ = ravel_pytree(y)
         trial_step = flat_eval - flat_y
         old = state.f_info
         old_gradient, _ = ravel_pytree(old.grad)
-        predicted = -(
-            old_gradient @ trial_step
-            + 0.5 * trial_step @ (old.hessian.as_matrix() @ trial_step)
+        slope = old_gradient @ trial_step
+        model_curvature = trial_step @ prepared.matvec(
+            scalar, state.hessian, trial_step
         )
+        predicted = -(slope + 0.5 * model_curvature)
         ratio = (old.f - f_eval) / jnp.where(predicted > 0, predicted, jnp.inf)
         finite = jnp.isfinite(f_eval)
         # Below the rounding level of the function value, the ratio of actual to
-        # predicted decrease is noise. A step that lowers the norm of the gradient
-        # is then accepted, since otherwise the radius shrinks until the solve stalls.
+        # predicted decrease is noise. A step that lowers the norm of the gradient is
+        # then accepted, since otherwise the radius shrinks until the solve stalls.
         noise = 100.0 * jnp.finfo(f_eval.dtype).eps * jnp.maximum(1.0, jnp.abs(old.f))
         below_noise = (jnp.abs(predicted) < noise) & (jnp.abs(f_eval - old.f) < noise)
         gradient_decreased = jnp.linalg.norm(gradient_eval) < jnp.linalg.norm(
@@ -207,7 +193,6 @@ class NewtonTrustRegion(optx.AbstractMinimiser):
         # slope and the new value along the step has its minimum. A penalty term
         # that switches on inside the step makes the model far too optimistic,
         # and shrinking by a fixed factor then takes many evaluations.
-        slope = old_gradient @ trial_step
         curvature_gap = f_eval - old.f - slope
         interpolated = -slope / jnp.where(
             curvature_gap > 0, 2.0 * curvature_gap, jnp.inf
@@ -224,32 +209,37 @@ class NewtonTrustRegion(optx.AbstractMinimiser):
         radius = jnp.where(finite, radius, 0.25 * trial_length)
         radius = jnp.where(state.first_step, state.radius, radius)
 
-        evaluated = _NewtonInfo(
-            f=f_eval,
-            grad=unravel(gradient_eval),
-            hessian=lx.MatrixLinearOperator(hessian_eval),
-        )
+        if prepared.fused:
+            hessian = jnp.where(accept, hessian_eval, state.hessian)
+        else:
+            # The Hessian is only needed at points that are accepted.
+            hessian = jax.lax.cond(
+                accept,
+                lambda: prepared.evaluate(scalar, flat_eval),
+                lambda: state.hessian,
+            )
+        evaluated = _NewtonInfo(f=f_eval, grad=unravel(gradient_eval))
         f_info = tree_where(accept, evaluated, old)
         aux = tree_where(accept, aux_eval, state.aux)
         new_y = tree_where(accept, state.y_eval, y)
 
         flat_new_y, _ = ravel_pytree(new_y)
-        direction = trust_region_step(
-            f_info.hessian.as_matrix(), ravel_pytree(f_info.grad)[0], radius
-        )
+        direction = prepared.step(scalar, hessian, ravel_pytree(f_info.grad)[0], radius)
         y_scale = self.atol + self.rtol * jnp.abs(flat_eval)
         f_scale = self.atol + self.rtol * jnp.abs(f_eval)
         converged = (self.norm(trial_step / y_scale) < 1) & (
             jnp.abs(f_eval - old.f) < f_scale
         )
         new_state = _NewtonState(
+            f_info=f_info,
+            hessian=hessian,
             first_step=jnp.array(False),
             y_eval=unravel(flat_new_y + direction),
-            f_info=f_info,
             aux=aux,
             radius=radius,
             terminate=converged & jnp.invert(state.first_step),
             result=optx.RESULTS.successful,
+            prepared=state.prepared,
         )
         input_aux = tree_where(state.first_step, aux, state.aux)
         return new_y, new_state, input_aux

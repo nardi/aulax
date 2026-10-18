@@ -8,7 +8,7 @@ import optimistix as optx
 import pytest
 
 import aulax as alx
-from aulax._sparse_newton import _import_sparse_libraries
+from aulax._hessian import _import_sparse_libraries
 
 
 def test_missing_libraries_raise_an_informative_error(monkeypatch):
@@ -39,7 +39,7 @@ def test_minimises_a_banded_function_like_the_dense_method():
     y0 = jnp.zeros(size)
     sparse = optx.minimise(
         chain,
-        alx.SparseNewton(rtol=1e-10, atol=1e-10),
+        alx.Newton(rtol=1e-10, atol=1e-10, hessian=alx.SparseHessian()),
         y0,
         target,
         has_aux=True,
@@ -47,7 +47,7 @@ def test_minimises_a_banded_function_like_the_dense_method():
     )
     dense = optx.minimise(
         chain,
-        alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        alx.Newton(rtol=1e-10, atol=1e-10),
         y0,
         target,
         has_aux=True,
@@ -73,10 +73,11 @@ def pendulum_like(y, args, state):
 def test_augmented_lagrangian_with_sparse_inner_solves():
     y0 = jnp.zeros(60)
     sparse_solver = alx.AugmentedLagrangian(
-        inner=alx.SparseNewton(rtol=1e-10, atol=1e-10), stationarity_tolerance=1e-6
+        inner=alx.Newton(rtol=1e-10, atol=1e-10, hessian=alx.SparseHessian()),
+        stationarity_tolerance=1e-6,
     )
     dense_solver = alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10), stationarity_tolerance=1e-6
+        inner=alx.Newton(rtol=1e-10, atol=1e-10), stationarity_tolerance=1e-6
     )
     sparse = alx.minimise(pendulum_like, sparse_solver, y0, max_steps=3000)
     dense = alx.minimise(pendulum_like, dense_solver, y0, max_steps=3000)
@@ -89,12 +90,12 @@ def test_sparse_inner_solves_work_with_gradient_scaling():
     # The scaling factors reach the problem through its `args`, which is what lets
     # the sparsity detection substitute sample values for them.
     solver = alx.AugmentedLagrangian(
-        inner=alx.SparseNewton(rtol=1e-10, atol=1e-10),
+        inner=alx.Newton(rtol=1e-10, atol=1e-10, hessian=alx.SparseHessian()),
         stationarity_tolerance=1e-6,
         scaling=alx.GradientScaling(limit=1.0),
     )
     reference = alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        inner=alx.Newton(rtol=1e-10, atol=1e-10),
         stationarity_tolerance=1e-6,
     )
     y0 = jnp.zeros(40)

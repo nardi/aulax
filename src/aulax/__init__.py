@@ -5,6 +5,17 @@ The conventional import style is `import aulax as alx`.
 
 import importlib.metadata
 
+from ._hessian import (
+    AutoHessian as AutoHessian,
+    DenseHessian as DenseHessian,
+    HessianStrategy as HessianStrategy,
+    IdentityPreconditioner as IdentityPreconditioner,
+    JacobiPreconditioner as JacobiPreconditioner,
+    MatrixFreeHessian as MatrixFreeHessian,
+    Preconditioner as Preconditioner,
+    ProblemSparsity as ProblemSparsity,
+    SparseHessian as SparseHessian,
+)
 from ._inner import (
     GradientStopping as GradientStopping,
     InnerStateAccess as InnerStateAccess,
@@ -13,7 +24,7 @@ from ._inner import (
     OptimistixStateAccess as OptimistixStateAccess,
 )
 from ._minimise import minimise as minimise
-from ._newton import NewtonTrustRegion as NewtonTrustRegion
+from ._newton import Newton as Newton
 from ._problem import (
     Constraints as Constraints,
     Evaluation as Evaluation,
@@ -30,7 +41,6 @@ from ._solution import (
     Statistics as Statistics,
 )
 from ._solver import AugmentedLagrangian as AugmentedLagrangian
-from ._sparse_newton import SparseNewton as SparseNewton
 from ._updates import (
     AlgencanPenaltyUpdate as AlgencanPenaltyUpdate,
     GeometricToleranceSchedule as GeometricToleranceSchedule,

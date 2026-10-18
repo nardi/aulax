@@ -7,7 +7,7 @@ from jaxtyping import Array, Float, Scalar
 from problems import PROBLEMS, BenchmarkProblem
 
 import aulax as alx
-from aulax._newton import trust_region_step
+from aulax._hessian import trust_region_step
 
 
 def rosenbrock(y: Float[Array, " 2"], args: None) -> tuple[Scalar, None]:
@@ -61,7 +61,7 @@ def test_trust_region_step_with_a_huge_curvature_ratio():
 def test_minimises_rosenbrock_in_few_evaluations():
     solution = optx.minimise(
         rosenbrock,
-        alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        alx.Newton(rtol=1e-10, atol=1e-10),
         jnp.array([-1.2, 1.0]),
         has_aux=True,
         max_steps=100,
@@ -76,7 +76,7 @@ def test_leaves_a_saddle_point_through_negative_curvature():
 
     solution = optx.minimise(
         double_well,
-        alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        alx.Newton(rtol=1e-10, atol=1e-10),
         jnp.array([1e-3, -1e-3]),
         has_aux=True,
         max_steps=100,
@@ -97,7 +97,7 @@ def test_evaluates_the_function_once_per_step():
 
     solution = optx.minimise(
         counted_rosenbrock,
-        alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        alx.Newton(rtol=1e-10, atol=1e-10),
         jnp.array([-1.2, 1.0]),
         has_aux=True,
         max_steps=100,
@@ -113,7 +113,7 @@ def test_handles_pytree_variables():
 
     solution = optx.minimise(
         fn,
-        alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        alx.Newton(rtol=1e-10, atol=1e-10),
         {"a": jnp.array(0.0), "b": jnp.zeros(2)},
         has_aux=True,
     )
@@ -125,7 +125,7 @@ def test_handles_pytree_variables():
 def test_augmented_lagrangian_with_newton_inner_solves(test_problem: BenchmarkProblem):
     assert test_problem.solution is not None
     solver = alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        inner=alx.Newton(rtol=1e-10, atol=1e-10),
         stationarity_tolerance=1e-6,
     )
     solution = alx.minimise(test_problem.problem, solver, jnp.asarray(test_problem.y0))
@@ -140,7 +140,7 @@ def test_newton_inner_solves_need_fewer_steps_than_bfgs():
         inner=optx.BFGS(rtol=1e-10, atol=1e-10), stationarity_tolerance=1e-6
     )
     newton = alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        inner=alx.Newton(rtol=1e-10, atol=1e-10),
         stationarity_tolerance=1e-6,
     )
     y0 = jnp.asarray(test_problem.y0)

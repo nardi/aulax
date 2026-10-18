@@ -1,10 +1,12 @@
 import functools
 import math
+from collections.abc import Callable
 from typing import Protocol
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+from jax.flatten_util import ravel_pytree
 from jaxtyping import Array, Float, PyTree, Scalar
 
 from ._misc import tree_max_norm
@@ -126,14 +128,33 @@ class GradientScaling(eqx.Module):
     the penalty term ill-conditioned, and the scaling spares the solver the penalty
     increases that would otherwise compensate.
 
-    The Jacobian of the constraints at `y0` is computed in full, which costs
-    as many derivative passes as the smaller of the number of variables and the
-    number of constraint elements. It does not suit problems with so many
-    constraints and variables that the dense Jacobian does not fit in memory.
+    The Jacobian of the constraints at `y0` is computed in full when it has at most
+    `dense_entries` entries, which costs as many derivative passes as the smaller
+    of the number of variables and the number of constraint elements. Larger
+    problems estimate the norm of every row from a few Jacobian-vector products
+    with random vectors instead, since $\mathbb{E}[(J z)_i^2] = \lVert J_i \rVert_2^2$
+    for a standard normal $z$. The estimate is a rough scale, which is all the
+    factor needs.
     """
 
     limit: float = eqx.field(default=100.0, static=True)
     r"""The largest gradient entry $\kappa$ that the scaling leaves alone."""
+    dense_entries: int = eqx.field(default=4_000_000, static=True)
+    """The most entries that the Jacobian may have to be computed in full."""
+    probes: int = eqx.field(default=32, static=True)
+    """The number of random vectors for the estimate of the row norms."""
+
+    def _probed_row_norms(self, constraint_residuals: Callable, y0: PyTree) -> PyTree:
+        """Estimate the 2-norm of every row of the Jacobian with random probes."""
+        flat, unravel = ravel_pytree(y0)
+        keys = jax.random.split(jax.random.key(0), self.probes)
+
+        def product(key: Array) -> PyTree:
+            tangent = unravel(jax.random.normal(key, flat.shape, flat.dtype))
+            return jax.jvp(constraint_residuals, (y0,), (tangent,))[1]
+
+        products = jax.vmap(product)(keys)
+        return jax.tree.map(lambda leaf: jnp.sqrt(jnp.mean(leaf**2, axis=0)), products)
 
     def scale_factors(
         self,
@@ -161,11 +182,15 @@ class GradientScaling(eqx.Module):
             factors = jax.tree.map(lambda leaf: jnp.ones_like(leaf, dtype), residuals)
         else:
             variable_count = sum(jnp.size(leaf) for leaf in jax.tree.leaves(y0))
-            differentiate = (
-                jax.jacfwd if variable_count <= residual_count else jax.jacrev
-            )
-            jacobian = differentiate(constraint_residuals)(y0)
-            factors = jax.tree.map(factor, _row_maxima(jacobian, residuals))
+            if variable_count * residual_count <= self.dense_entries:
+                differentiate = (
+                    jax.jacfwd if variable_count <= residual_count else jax.jacrev
+                )
+                jacobian = differentiate(constraint_residuals)(y0)
+                norms = _row_maxima(jacobian, residuals)
+            else:
+                norms = self._probed_row_norms(constraint_residuals, y0)
+            factors = jax.tree.map(factor, norms)
         return Scaling(
             objective=factor(tree_max_norm(objective_gradient)),
             constraints=Constraints(equality=factors[0], inequality=factors[1]),

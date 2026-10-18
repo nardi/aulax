@@ -127,7 +127,7 @@ def test_second_derivatives_match_the_s2mpj_lagrangian_hessian(name):
 def test_aulax_solves_adapted_hs71_with_newton_inner_solves():
     adapted = adapted_problem("HS71")
     solver = alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-8, atol=1e-8), stationarity_tolerance=1e-6
+        inner=alx.Newton(rtol=1e-8, atol=1e-8), stationarity_tolerance=1e-6
     )
     solution = alx.minimise(adapted.problem, solver, jnp.asarray(adapted.y0))
     np.testing.assert_allclose(

@@ -68,7 +68,13 @@ def test_problem_runs_once_per_evaluation():
 
     solution = alx.minimise(counted_hs35, SOLVER, jnp.array([0.5, 0.5, 0.5]))
     # One evaluation per loop iteration, plus one at the start to set up the
-    # penalty and one at the end for the stationarity residual.
+    # penalty, one for the Jacobian of the default scaling, and one at the end for
+    # the stationarity residual.
+    assert shared_calls == int(solution.stats.num_steps) + 3
+
+    shared_calls = 0
+    unscaled = alx.AugmentedLagrangian(inner=SOLVER.inner, scaling=None)
+    solution = alx.minimise(counted_hs35, unscaled, jnp.array([0.5, 0.5, 0.5]))
     assert shared_calls == int(solution.stats.num_steps) + 2
 
 
@@ -233,7 +239,7 @@ def test_penalty_stays_when_the_problem_is_feasible_to_well_below_the_tolerance(
         )
 
     solver = alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        inner=alx.Newton(rtol=1e-10, atol=1e-10),
         penalty_update=alx.AlgencanPenaltyUpdate(initial_value=2.0),
         stationarity_tolerance=1e-6,
     )

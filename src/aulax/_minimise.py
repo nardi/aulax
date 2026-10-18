@@ -8,6 +8,7 @@ import lineax as lx
 import optimistix as optx
 from jaxtyping import Array, Bool, Int, PyTree, Scalar
 
+from ._inner import GradientStopping, MinimiserStopping
 from ._lagrangian import (
     augmented_lagrangian,
     kkt_infeasibility,
@@ -153,7 +154,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     raw_problem = problem
     # The inner solver calls the problem with these `args`. The scaling factors
     # travel in them and not in a closure, so that a tool that analyzes the
-    # problem, like the sparsity detection of `SparseNewton`, can substitute sample
+    # problem, like the sparsity detection of `SparseHessian`, can substitute sample
     # values for them.
     inner_user_args = args
     if solver.scaling is None:
@@ -242,7 +243,14 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         )
         new_dynamic_inner_state, _ = eqx.partition(new_inner_state, eqx.is_array)
         inner_steps = loop.inner_steps + 1
-        inner_converged = solver.inner_stopping.is_inner_converged(
+        stopping = solver.inner_stopping
+        if stopping is None:
+            stopping = (
+                GradientStopping()
+                if solver.inner_state_access.prefers_gradient_stopping(new_inner_state)
+                else MinimiserStopping()
+            )
+        inner_converged = stopping.is_inner_converged(
             solver.inner_state_access.accepted_gradient(new_inner_state),
             jnp.maximum(
                 loop.inner_tolerance,
@@ -315,7 +323,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             stationary = (
                 tree_max_norm(gradient)
                 <= jnp.maximum(
-                    solver.stationarity_tolerance,
+                    solver.stationarity_tolerance_for_inner(),
                     solver.gradient_noise_floor(loop.penalty, objective.dtype),
                 )
                 * gradient_scale

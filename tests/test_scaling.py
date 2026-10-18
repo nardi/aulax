@@ -21,7 +21,7 @@ def badly_scaled_projection(y, args, state):
 
 def solver(scaling):
     return alx.AugmentedLagrangian(
-        inner=alx.NewtonTrustRegion(rtol=1e-10, atol=1e-10),
+        inner=alx.Newton(rtol=1e-10, atol=1e-10),
         stationarity_tolerance=1e-6,
         scaling=scaling,
     )

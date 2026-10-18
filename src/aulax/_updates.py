@@ -158,7 +158,7 @@ class AlgencanPenaltyUpdate(eqx.Module):
     """Whether every constraint element has its own penalty."""
     initial_value: float | None = None
     """The initial penalty. `None` selects the ALGENCAN formula."""
-    initial_value_range: tuple[float, float] = (1e-8, 1e8)
+    initial_value_range: tuple[float, float] = (1.0, 1e8)
     """The range the ALGENCAN formula is clipped to.
 
     A problem that starts far from feasible gets a small initial penalty from

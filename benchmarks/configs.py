@@ -606,7 +606,7 @@ _CONFIGURATION_LIST: list[Configuration] = [
         name="newton",
         description="Trust-region Newton inner solves with the exact Hessian.",
         solver=alx.AugmentedLagrangian(
-            inner=alx.NewtonTrustRegion(rtol=1e-8, atol=1e-8),
+            inner=alx.Newton(rtol=1e-8, atol=1e-8),
             stationarity_tolerance=1e-6,
         ),
     ),
@@ -614,7 +614,7 @@ _CONFIGURATION_LIST: list[Configuration] = [
         name="newton_floor",
         description="Trust-region Newton, with an initial penalty of at least one.",
         solver=alx.AugmentedLagrangian(
-            inner=alx.NewtonTrustRegion(rtol=1e-8, atol=1e-8),
+            inner=alx.Newton(rtol=1e-8, atol=1e-8),
             stationarity_tolerance=1e-6,
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
         ),
@@ -624,7 +624,7 @@ _CONFIGURATION_LIST: list[Configuration] = [
         description="As newton_floor, with inner tolerances that shrink by 100 per "
         "outer iteration from 0.1.",
         solver=alx.AugmentedLagrangian(
-            inner=alx.NewtonTrustRegion(rtol=1e-8, atol=1e-8),
+            inner=alx.Newton(rtol=1e-8, atol=1e-8),
             stationarity_tolerance=1e-6,
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
             tolerance_schedule=alx.GeometricToleranceSchedule(
@@ -637,7 +637,7 @@ _CONFIGURATION_LIST: list[Configuration] = [
         description="Trust-region Newton with gradient stopping, and an initial "
         "penalty of at least one.",
         solver=alx.AugmentedLagrangian(
-            inner=alx.NewtonTrustRegion(rtol=1e-6, atol=1e-6),
+            inner=alx.Newton(rtol=1e-6, atol=1e-6),
             inner_stopping=alx.GradientStopping(),
             stationarity_tolerance=1e-6,
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
@@ -649,7 +649,7 @@ _CONFIGURATION_LIST: list[Configuration] = [
         description="Trust-region Newton with gradient-based scaling and an initial "
         "penalty of at least one.",
         solver=alx.AugmentedLagrangian(
-            inner=alx.NewtonTrustRegion(rtol=1e-8, atol=1e-8),
+            inner=alx.Newton(rtol=1e-8, atol=1e-8),
             stationarity_tolerance=1e-6,
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
             scaling=alx.GradientScaling(),
@@ -660,12 +660,23 @@ _CONFIGURATION_LIST: list[Configuration] = [
         description="As newton_scaled, with inner tolerances that shrink by 100 per "
         "outer iteration from 0.1.",
         solver=alx.AugmentedLagrangian(
-            inner=alx.NewtonTrustRegion(rtol=1e-8, atol=1e-8),
+            inner=alx.Newton(rtol=1e-8, atol=1e-8),
             stationarity_tolerance=1e-6,
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
             tolerance_schedule=alx.GeometricToleranceSchedule(
                 initial=1e-1, factor=1e-2
             ),
+            scaling=alx.GradientScaling(),
+        ),
+    ),
+    AulaxConfiguration(
+        name="newton_scaled_tight",
+        description="As newton_scaled, with every inner solve at the final tolerance.",
+        solver=alx.AugmentedLagrangian(
+            inner=alx.Newton(rtol=1e-8, atol=1e-8),
+            stationarity_tolerance=1e-6,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value_range=(1.0, 1e8)),
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
             scaling=alx.GradientScaling(),
         ),
     ),

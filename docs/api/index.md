@@ -40,9 +40,25 @@
 
 ## Inner solves
 
-::: aulax.NewtonTrustRegion
+::: aulax.Newton
 
-::: aulax.SparseNewton
+::: aulax.HessianStrategy
+
+::: aulax.AutoHessian
+
+::: aulax.DenseHessian
+
+::: aulax.SparseHessian
+
+::: aulax.ProblemSparsity
+
+::: aulax.MatrixFreeHessian
+
+::: aulax.Preconditioner
+
+::: aulax.IdentityPreconditioner
+
+::: aulax.JacobiPreconditioner
 
 ::: aulax.InnerStoppingRule
 

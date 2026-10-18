@@ -27,6 +27,15 @@ class InnerStateAccess(Protocol):
         """Return the gradient of the augmented Lagrangian there, or `None`."""
         ...
 
+    def prefers_gradient_stopping(self, inner_state: PyTree) -> bool:
+        """Return whether the inner solver's own stopping test is unreliable.
+
+        A minimiser that takes inexact steps, such as truncated conjugate gradients,
+        can make a small step while the gradient is still large. The solver then
+        stops on the gradient when no stopping rule was chosen.
+        """
+        ...
+
     def transfer_state(
         self,
         old_state: PyTree,
@@ -97,6 +106,15 @@ class OptimistixStateAccess(eqx.Module):
         """Return `f_info.grad` of the state, if it has one."""
         function_info = getattr(inner_state, "f_info", None)
         return getattr(function_info, "grad", None)
+
+    def prefers_gradient_stopping(self, inner_state: PyTree) -> bool:
+        """Return whether the state belongs to a minimiser with inexact steps.
+
+        The `Newton` minimiser records the mode of its Hessian in the state, and
+        only the matrix-free mode takes inexact steps.
+        """
+        prepared = getattr(inner_state, "prepared", None)
+        return getattr(getattr(prepared, "value", None), "mode", None) == "matrix_free"
 
     def transfer_state(
         self,
