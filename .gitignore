@@ -17,3 +17,5 @@ site/
 benchmarks/s2mpj/.cache/
 # Ipopt binaries for Windows, downloaded by `benchmarks/ipopt.py`.
 benchmarks/.ipopt/
+# Benchmark output, written by `benchmarks/run.py`.
+benchmarks/results/
