@@ -35,6 +35,7 @@ nav = [
     { "Basic usage" = "guide/basic-usage.md" },
     { "Problem interface" = "guide/problem-interface.md" },
     { "Advanced usage" = "guide/advanced-usage.md" },
+    { "Inner solvers" = "guide/inner-solvers.md" },
   ] },
   { "Theory" = "theory.md" },
   { "API reference" = "api/index.md" },

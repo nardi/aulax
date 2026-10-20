@@ -70,7 +70,7 @@ assert jnp.allclose(solution.value, jnp.array([0.55, 0.45, 0.0]), atol=1e-3)
 
 ### Inner minimiser
 
-Any optimistix minimiser can do the inner solves. `optx.BFGS` stores a dense Hessian approximation, which costs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `optx.LBFGS` keeps only a few recent gradient differences and is usually the better choice:
+The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. Any optimistix minimiser can do the inner solves. `optx.BFGS` stores a dense Hessian approximation, which costs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `optx.LBFGS` keeps only a few recent gradient differences and is usually the better choice:
 
 <!-- name: test_advanced_usage -->
 ```python
