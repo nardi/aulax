@@ -681,6 +681,28 @@ _CONFIGURATION_LIST: list[Configuration] = [
         ),
     ),
     AulaxConfiguration(
+        name="default",
+        description="The default solver, which chooses the Hessian mode itself.",
+        solver=alx.AugmentedLagrangian(),
+    ),
+    AulaxConfiguration(
+        name="newton_dense",
+        description="The default solver with a dense Hessian.",
+        solver=alx.AugmentedLagrangian(inner=alx.Newton(hessian=alx.DenseHessian())),
+    ),
+    AulaxConfiguration(
+        name="newton_sparse",
+        description="The default solver with a sparse Hessian.",
+        solver=alx.AugmentedLagrangian(inner=alx.Newton(hessian=alx.SparseHessian())),
+    ),
+    AulaxConfiguration(
+        name="newton_matrix_free",
+        description="The default solver with Hessian-vector products only.",
+        solver=alx.AugmentedLagrangian(
+            inner=alx.Newton(hessian=alx.MatrixFreeHessian())
+        ),
+    ),
+    AulaxConfiguration(
         name="minimiser_stationarity",
         description="The minimiser's own stopping test with a stationarity check.",
         solver=alx.AugmentedLagrangian(
