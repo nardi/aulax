@@ -750,8 +750,14 @@ class AutoHessian(eqx.Module):
     names the reason when sparse mode is rejected.
     """
 
-    dense_limit: int = eqx.field(default=150, static=True)
-    """The largest number of variables that uses dense mode."""
+    dense_limit: int = eqx.field(default=400, static=True)
+    """The largest number of variables that uses dense mode.
+
+    Dense mode reads the inertia of the Hessian from its eigendecomposition, which
+    the sparse factorization does not report. At this size the eigendecomposition
+    is still cheap. In the benchmarks, sparse mode stalled on stiff problems of this
+    size where dense mode converged.
+    """
     sparsity: ProblemSparsity | None = None
     """What the user knows about the sparsity pattern, passed on to sparse mode."""
     linear_solver: Any = eqx.field(default=None, static=True)

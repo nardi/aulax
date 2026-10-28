@@ -308,9 +308,9 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             user_evaluation(evaluation), user_multipliers(estimates)
         )
         feasibility_tolerance = solver.feasibility_tolerance_for(objective.dtype)
-        # A problem that is feasible to well below the tolerance keeps its penalty.
+        # Once the infeasibility is near the tolerance, the penalty stops growing.
         new_penalty = tree_where(
-            kkt <= solver.penalty_freeze_fraction * feasibility_tolerance,
+            kkt <= solver.penalty_freeze_factor_for_inner() * feasibility_tolerance,
             loop.penalty,
             new_penalty,
         )

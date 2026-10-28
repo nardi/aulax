@@ -44,9 +44,10 @@ class AugmentedLagrangian(eqx.Module):
 
     The solve stops when $\lVert h \rVert_\infty$ and
     $\lVert \min(-g, \mu) \rVert_\infty$ are both below it. `None` selects
-    $10^{-6}$ in float64 and $10^{-3}$ in float32. A minimiser finds `y` to about
-    the square root of the machine epsilon, so much tighter values make the
-    penalty grow without improving the solution.
+    $10^{-8}$ in float64 for `Newton`, which is the tolerance of IPOPT, and
+    $10^{-6}$ in float64 for other minimisers. Float32 selects $10^{-3}$. The
+    violation at the end of a solve is about the final inner tolerance of `inner`,
+    so a bound much below that cannot be reached.
     """
     multiplier_update: MultiplierUpdate = SafeguardedMultiplierUpdate()
     """The rule that updates the multipliers after each inner solve."""
@@ -92,14 +93,16 @@ class AugmentedLagrangian(eqx.Module):
     Reaching it is not an error. The multipliers are updated from the last point,
     and the next inner solve continues from there.
     """
-    penalty_freeze_fraction: float = 0.1
-    r"""The penalty stops growing when the infeasibility is this fraction of its
-    tolerance.
+    penalty_freeze_factor: float | None = None
+    r"""The penalty stops growing once the infeasibility is within this multiple of
+    the tolerance.
 
     The infeasibility is the largest violation of feasibility or complementarity.
-    A problem that is feasible to well below `feasibility_tolerance` gains nothing
-    from a larger penalty, and the penalty only makes the inner problems harder.
-    The multipliers keep updating. Zero turns the rule off.
+    Near the tolerance, the multipliers converge with the penalty held fixed, and
+    a larger penalty only makes the inner problems harder. The multipliers keep
+    updating. `None` selects 10 for `Newton` and 0.1 for other minimisers, since
+    the quasi-Newton minimisers need many more steps with the penalty fixed. Zero
+    turns the rule off.
     """
     gradient_noise_factor: float = 1e3
     r"""How far above rounding errors the tolerances on the gradient are kept.
@@ -125,10 +128,17 @@ class AugmentedLagrangian(eqx.Module):
         return 1e-6 if isinstance(self.inner, Newton) else math.inf
 
     def feasibility_tolerance_for(self, dtype: DTypeLike) -> float:
-        """Return `feasibility_tolerance`, or its default for `dtype`."""
-        if self.feasibility_tolerance is None:
-            return dtype_default(dtype, 1e-6, 1e-3)
-        return self.feasibility_tolerance
+        """Return `feasibility_tolerance`, or its default for `inner` and `dtype`."""
+        if self.feasibility_tolerance is not None:
+            return self.feasibility_tolerance
+        newton_default = 1e-8 if isinstance(self.inner, Newton) else 1e-6
+        return dtype_default(dtype, newton_default, 1e-3)
+
+    def penalty_freeze_factor_for_inner(self) -> float:
+        """Return `penalty_freeze_factor`, or its default for `inner`."""
+        if self.penalty_freeze_factor is not None:
+            return self.penalty_freeze_factor
+        return 10.0 if isinstance(self.inner, Newton) else 0.1
 
     def gradient_noise_floor(self, penalty: Constraints, dtype: DTypeLike) -> Scalar:
         """Return the smallest tolerance on the gradient that rounding errors allow."""
