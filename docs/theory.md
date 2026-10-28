@@ -90,7 +90,7 @@ The algorithm above leaves open how large $\rho$ should be and how accurately to
 
 ## The solver loop
 
-aulax minimizes each $L_\rho$ with an optimistix minimiser, which it calls one step at a time inside a single `jax.lax.while_loop`. When the inner minimiser reports that it has converged, the next loop iteration updates the multipliers and the penalty, and restarts the inner minimiser at the same point. The update comes one iteration late, because an optimistix minimiser returns the evaluation of the point it started its step from. To get $h$ and $g$ at the inner solution, the loop takes one more step from there, uses the evaluation that comes back, and discards the step itself.
+aulax minimizes each $L_\rho$ with an inner minimiser, which is `Newton` by default or any optimistix minimiser. It calls the minimiser one step at a time inside a single `jax.lax.while_loop`. When the inner minimiser reports that it has converged, the next loop iteration updates the multipliers and the penalty, and restarts the inner minimiser at the same point. An optimistix minimiser returns the evaluation of the point it started its step from, so its update comes one iteration late. To get $h$ and $g$ at the inner solution, the loop takes one more step from there, uses the evaluation that comes back, and discards the step itself. `Newton` keeps the evaluation at its accepted point, so it updates in the iteration where the inner solve ends.
 
 A single loop matters under `jax.vmap`. With an outer loop around complete inner solves, every problem in a batch would wait for the slowest inner solve before any of them could update its multipliers. In a single loop, each problem moves on by itself.
 
@@ -113,6 +113,7 @@ which is small when the constraints hold and inactive constraints have small mul
 - `initial_value` is the penalty for the first inner solve. By default it comes from the formula of Birgin and Martínez, $\rho_0 = 10 \max(1, \lvert f \rvert) / \max(1, \frac{1}{2} \lVert h \rVert^2 + \frac{1}{2} \lVert \max(0, g) \rVert^2)$ at `y0`, clipped to $[10^{-8}, 10^{8}]$. This balances the objective against the initial violation. When `y0` is nearly feasible and the objective is large, the formula can start higher than needed, and a fixed value like 1 can be faster.
 - `maximum_value` caps the penalty, by default at $10^{12}$ in float64 and $10^{6}$ in float32. When the penalty is at its cap and the infeasibility stops decreasing, the solve ends with `RESULTS.infeasible`. A lower cap detects infeasible problems sooner, and a higher one gives badly scaled problems more room.
 - `per_constraint=True` gives every constraint element its own penalty, which grows based on that element alone. This helps when constraints have very different scales, since one hard constraint no longer drives up the penalty on all the others.
+- `penalty_freeze_factor` stops the penalty from growing once the infeasibility is within this multiple of `feasibility_tolerance`. The multipliers keep updating while the penalty stays fixed, and they converge without it. The default is 10 for `Newton` and 0.1 for other minimisers. On the Hock-Schittkowski problems, the factor of 10 removed the one failure that the tighter feasibility tolerance caused.
 
 ### Multipliers
 
@@ -130,8 +131,18 @@ The multipliers in `Solution.multipliers` are the estimates before clipping.
 
 The solve stops when the inner tolerance has reached its final value, and the largest of $\lVert h \rVert_\infty$ and $\lVert \min(-g, \mu) \rVert_\infty$ is below `feasibility_tolerance`. The second term is small when every inequality holds and every inactive constraint has a zero multiplier.
 
-- `feasibility_tolerance` is $10^{-6}$ in float64 and $10^{-3}$ in float32 by default. A minimiser can only locate $y$ to about the square root of the machine epsilon, because $f$ changes quadratically near a minimum. Asking for much less violation than that makes the penalty grow while $y$ stays where it is, and the multiplier estimates get worse with every increase.
+- `feasibility_tolerance` is $10^{-8}$ in float64 for `Newton`, $10^{-6}$ in float64 for other minimisers, and $10^{-3}$ in float32, by default. The violation at the end of a solve is about the final inner tolerance, so a bound far below that cannot be reached. `Newton` converges quadratically near the solution, so its final tolerance of $10^{-8}$ is at the same level as the bound. On the L-BFGS example of the [advanced usage](guide/advanced-usage.md) guide, the tighter tolerance takes about twice as many steps, which is why the quasi-Newton minimisers keep the looser default.
 - `inner_max_steps` ends an inner solve after that many steps, by default 256. The multipliers are then updated from wherever the inner minimiser got to, which is often good enough to make progress.
+
+## Comparison with IPOPT
+
+IPOPT [6] is an interior point method. It replaces the one-sided penalty with a barrier, and it solves one Newton system for the primal and dual variables at each iteration. aulax keeps the augmented Lagrangian instead, and that costs it in two places. Each multiplier update starts a new inner solve. The kink of the one-sided penalty also forces the trust-region Newton steps to shrink whenever a constraint crosses its shifted boundary [7]. In return, aulax never forms a KKT matrix, so its memory stays proportional to the number of variables and constraints.
+
+The benchmarks compare solvers with performance profiles [8]. The numbers below come from the 49 Hock-Schittkowski problems in `benchmarks/problems`. The geometric mean of the evaluations of IPOPT is 0.42 times that of the earlier default, which stopped at a feasibility of $10^{-6}$. That default reached a violation of $7.9 \times 10^{-7}$, and four problems ended more than $10^{-6}$ (relative) from the known objective. The default for `Newton` now stops at $10^{-8}$. It uses 1.08 times the earlier evaluations, has no violation above $10^{-8}$, and has one objective error above $10^{-6}$. IPOPT has two violations above $10^{-8}$ and one objective error above $10^{-6}$ on the same problems. Problem `hs2` is left out of these counts, since its known objective disagrees with every solver.
+
+The IPOPT version here is 3.11.9, from the Ubuntu 24.04 package. The benchmark code pins 3.14.20 for Windows, so the counts on other platforms may shift a little.
+
+Two gaps remain. Sparse mode cannot read the inertia of the Hessian from its factorization, so its trust-region steps are less reliable than the dense ones. On the 1000-variable pendulum and Poisson control problems, aulax still fails. The benchmark runs IPOPT only up to 300 variables, so there is no IPOPT count for those problems.
 
 ## Differentiation
 
@@ -152,3 +163,6 @@ where $H$ is the Hessian of the Lagrangian, and the last block row sets the deri
 3. J. Nocedal, S. J. Wright. Numerical Optimization, 2nd ed. Springer, 2006. Chapter 17.
 4. M. J. D. Powell. A method for nonlinear constraints in minimization problems. In R. Fletcher (ed.), Optimization, Academic Press, 1969.
 5. R. T. Rockafellar. A dual approach to solving nonlinear programming problems by unconstrained optimization. Math. Program. 5, 1973.
+6. A. Wächter, L. T. Biegler. On the implementation of an interior-point filter line-search algorithm for large-scale nonlinear programming. Math. Program. 106(1), pp. 25-57, 2006.
+7. A. R. Conn, N. I. M. Gould, Ph. L. Toint. Trust-Region Methods. SIAM, 2000.
+8. E. D. Dolan, J. J. Moré. Benchmarking optimization software with performance profiles. Math. Program. 91(2), pp. 201-213, 2002.
