@@ -60,8 +60,9 @@ aulax is in early development, and its interface may still change. It currently 
 - equality and inequality constraints on pytrees of any structure, with state threaded between evaluations,
 - the ALGENCAN multiplier and penalty updates, with safeguards and optional per-constraint penalties,
 - support for `jax.jit` and `jax.vmap`, and for float32 as well as float64,
-- implicit differentiation through the KKT conditions, with a dense or matrix-free linear solver, and unrolled differentiation as an alternative.
+- implicit differentiation through the KKT conditions, with a dense or matrix-free linear solver, and unrolled differentiation as an alternative,
+- a trust-region `Newton` inner minimiser with dense, sparse or matrix-free Hessians, and reuse of the Hessian approximation across outer iterations for the quasi-Newton minimisers.
 
-Several things are planned but not there yet: sparse direct linear solvers for the implicit derivatives, a least-squares variant that uses Gauss-Newton for the inner solves, and reuse of the inner minimiser's Hessian approximation across outer iterations.
+Several things are planned but not there yet: sparse direct linear solvers for the implicit derivatives, and a least-squares variant that uses Gauss-Newton for the inner solves.
 
 aulax is licensed under the [Hippocratic License 3.0](https://github.com/nardi/aulax/blob/main/LICENSE.md).

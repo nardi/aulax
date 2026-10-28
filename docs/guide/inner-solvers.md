@@ -39,7 +39,7 @@ The Hessian that these modes handle is the one of the augmented Lagrangian, whic
 
 With no argument, `alx.Newton()` uses `alx.AutoHessian`. It looks at the problem when the solver is traced:
 
-1. Problems with at most 150 variables use dense mode.
+1. Problems with at most 400 variables use dense mode. Dense mode reads the inertia of the Hessian from its eigendecomposition, and that keeps the trust-region steps reliable on stiff problems.
 2. Larger problems try sparse mode. The sparsity of the Hessian is detected with [asdex](https://github.com/adrhill/asdex), and the result is accepted when fewer than 5 percent of the entries are nonzero and the coloring needs fewer than a tenth of the variables as colors.
 3. Everything else uses matrix-free mode. That includes a missing `asdex` or `splineax` installation, a function that `asdex` cannot trace, and a Hessian with dense rows, which a constraint that involves every variable produces.
 
@@ -70,13 +70,13 @@ Dense mode takes the step from an eigendecomposition of the Hessian up to `eigen
 
 ## Sparse mode
 
-Sparse mode needs the optional packages `asdex` and `splineax`, which `pip install aulax[sparse]` installs. It computes the Hessian with as many Hessian-vector products as the coloring of its sparsity pattern needs, and solves the Newton system with a sparse direct solver. The pattern is detected by default.
+Sparse mode needs the optional packages `asdex` and `splineax`, which `pip install aulax[sparse]` installs. It computes the Hessian with as many Hessian-vector products as the coloring of its sparsity pattern needs, and solves the Newton system with a sparse direct solver. The pattern is detected by default. The sparse direct solver does not report the inertia of the Hessian, so the step inside the trust region relies on a shifted factorization. On stiff problems of 200 to 300 variables in the benchmarks, dense mode converged where sparse mode needed many more steps or failed, which is why the automatic choice prefers dense mode up to 400 variables.
 
 ```python
 sparse = alx.AugmentedLagrangian(inner=alx.Newton(hessian=alx.SparseHessian()))
 ```
 
-Detection traces the problem function, so it cannot handle callbacks, and it can be slow for very large problems. When you know the structure, give it as a `ProblemSparsity` and nothing is traced:
+Detection traces the problem function, so it cannot handle callbacks, except that top-level `jax.debug.callback` calls are dropped first. It can also be slow for very large problems. When you know the structure, give it as a `ProblemSparsity` and nothing is traced:
 
 ```python
 import numpy as np
