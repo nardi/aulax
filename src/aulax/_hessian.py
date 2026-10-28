@@ -415,6 +415,23 @@ def _scalar_function(fn: Callable, unravel: Callable, args: PyTree) -> Callable:
     return lambda flat, arguments=args: fn(unravel(flat), arguments)[0]
 
 
+def _without_debug_callbacks(function: Callable, sample: Array) -> Callable:
+    """Return `function` with its top-level `jax.debug.callback` calls removed.
+
+    `asdex` cannot trace a debug callback, but the callback has no outputs, so
+    dropping it from the jaxpr leaves the values unchanged. This lets a problem
+    that counts or prints its evaluations still get a sparsity pattern.
+    """
+    closed_jaxpr = jax.make_jaxpr(function)(sample)
+    kept_equations = [
+        equation
+        for equation in closed_jaxpr.jaxpr.eqns
+        if equation.primitive.name != "debug_callback"
+    ]
+    jaxpr = closed_jaxpr.jaxpr.replace(eqns=kept_equations)
+    return lambda flat: jax.core.eval_jaxpr(jaxpr, closed_jaxpr.consts, flat)[0]
+
+
 class _DensePrepared:
     mode = "dense"
 
@@ -698,9 +715,10 @@ class SparseHessian(eqx.Module):
             coloring = asdex.hessian_coloring_from_sparsity(pattern)
         else:
             sample = _sample_args(args)
-            coloring = asdex.hessian_coloring(
+            scalar = _without_debug_callbacks(
                 _scalar_function(fn, unravel, sample), np.zeros(size, flat.dtype)
             )
+            coloring = asdex.hessian_coloring(scalar, np.zeros(size, flat.dtype))
         solver = (
             splineax.AutoSparseLinearSolver()
             if self.linear_solver is None

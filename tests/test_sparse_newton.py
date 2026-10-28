@@ -102,3 +102,31 @@ def test_sparse_inner_solves_work_with_gradient_scaling():
     scaled = alx.minimise(pendulum_like, solver, y0, max_steps=3000)
     plain = alx.minimise(pendulum_like, reference, y0, max_steps=3000)
     np.testing.assert_allclose(scaled.value, plain.value, atol=1e-5)
+
+
+@requires_sparse_libraries
+def test_sparse_detection_ignores_debug_callbacks():
+    def counted_chain(y, args):
+        """Return the chain objective and count its calls with a debug callback."""
+        jax.debug.callback(lambda: None)
+        return chain(y, args)
+
+    size = 300
+    target = jnp.sin(jnp.linspace(0.0, 3.0, size))
+    sparse = optx.minimise(
+        counted_chain,
+        alx.Newton(rtol=1e-10, atol=1e-10, hessian=alx.SparseHessian()),
+        jnp.zeros(size),
+        target,
+        has_aux=True,
+        max_steps=200,
+    )
+    dense = optx.minimise(
+        chain,
+        alx.Newton(rtol=1e-10, atol=1e-10),
+        jnp.zeros(size),
+        target,
+        has_aux=True,
+        max_steps=200,
+    )
+    np.testing.assert_allclose(sparse.value, dense.value, atol=1e-7)
