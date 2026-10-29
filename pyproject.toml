@@ -30,6 +30,7 @@ build-backend = "uv_build"
 dev = ["pytest>=9.1.1", "ruff>=0.16.9", "ty>=0.0.84", { include-group = "docs" }]
 docs = ["markdown-pytest>=0.6.6", "mkdocstrings-python>=2.0.9", "zensical>=0.0.66"]
 bench = [
+    "nlopt>=2.11.0",
     "optax>=0.2.8",
     "scipy>=1.17.1",
 ]
