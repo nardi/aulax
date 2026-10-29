@@ -368,6 +368,133 @@ class ScipyConfiguration:
 
 
 @dataclass(frozen=True)
+class NloptConfiguration:
+    """An NLopt algorithm, with derivatives from JAX.
+
+    `AUGLAG` handles the constraints as an augmented Lagrangian and solves each
+    subproblem with the local minimiser `local`, which must not handle constraints.
+    The inequality residuals of the problem are passed as inequality constraints,
+    as for IPOPT, so every solver sees the same formulation.
+    """
+
+    name: str
+    """The name the scripts and result files use."""
+    description: str
+    """One sentence on what the configuration changes."""
+    algorithm: str
+    """The name of the NLopt algorithm, as in `nlopt.AUGLAG`."""
+    local: str | None = None
+    """The name of the local minimiser that `AUGLAG` runs on each subproblem."""
+    constraint_tolerance: float = 1e-8
+    """The tolerance of every constraint, which the solver checks at its solution."""
+    tolerance: float = 1e-10
+    """The relative tolerance on the variables and on the objective."""
+    max_evaluations: int = 20_000
+    """The limit on evaluations of the objective, which NLopt counts per call."""
+
+    def solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
+        """Solve `problem` and count the distinct evaluations NLopt asked for."""
+        try:
+            return self._solve(problem, repeats)
+        except Exception as error:
+            return _error_record(problem, error)
+
+    def _run(self, problem: BenchmarkProblem, cache: _CachedDerivatives):
+        """Run NLopt once with the evaluations from `cache`.
+
+        Returns the solution and the NLopt status code of the run.
+        """
+        import nlopt
+
+        _, equality, inequality = cache.values(cache.flat_y0)
+        size = cache.flat_y0.size
+
+        def objective(x, gradient):
+            """Return the objective at `x`, and its gradient into `gradient`."""
+            if gradient.size:
+                gradient[:] = cache.derivatives(x)[0]
+            return float(cache.values(x)[0])
+
+        optimizer = nlopt.opt(getattr(nlopt, self.algorithm), size)
+        if self.local is not None:
+            local = nlopt.opt(getattr(nlopt, self.local), size)
+            local.set_xtol_rel(self.tolerance)
+            local.set_ftol_rel(self.tolerance)
+            optimizer.set_local_optimizer(local)
+        optimizer.set_min_objective(objective)
+        optimizer.set_xtol_rel(self.tolerance)
+        optimizer.set_ftol_rel(self.tolerance)
+        optimizer.set_maxeval(self.max_evaluations)
+
+        if equality.size:
+
+            def equality_constraints(result, x, gradient):
+                """Fill the equality residuals at `x` and their Jacobian."""
+                result[:] = cache.values(x)[1]
+                if gradient.size:
+                    gradient[:, :] = cache.derivatives(x)[1]
+
+            optimizer.add_equality_mconstraint(
+                equality_constraints, np.full(equality.size, self.constraint_tolerance)
+            )
+        if inequality.size:
+
+            def inequality_constraints(result, x, gradient):
+                """Fill the inequality residuals at `x`, which NLopt takes as `<= 0`."""
+                result[:] = cache.values(x)[2]
+                if gradient.size:
+                    gradient[:, :] = cache.derivatives(x)[2]
+
+            optimizer.add_inequality_mconstraint(
+                inequality_constraints,
+                np.full(inequality.size, self.constraint_tolerance),
+            )
+        solution = optimizer.optimize(cache.flat_y0)
+        return solution, optimizer.last_optimize_result()
+
+    def _solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
+        """Solve `problem`, letting exceptions through."""
+        import nlopt
+
+        cache = _CachedDerivatives(problem)
+        start = time.perf_counter()
+        solution, status = self._run(problem, cache)
+        compile_seconds = time.perf_counter() - start
+        seconds = _best_time(
+            lambda: self._run(problem, _CachedDerivatives(problem)), repeats
+        )
+        value = cache.unravel(jnp.asarray(solution))
+        evaluation = problem.problem(value, problem.args, None)
+        objective = float(evaluation.objective)
+        infeasibility = constraint_violation(evaluation)
+        variables, equality, inequality = _problem_sizes(problem)
+        converged = status in (
+            nlopt.SUCCESS,
+            nlopt.STOPVAL_REACHED,
+            nlopt.FTOL_REACHED,
+            nlopt.XTOL_REACHED,
+        )
+        return SolveRecord(
+            problem=problem.name,
+            variables=variables,
+            equality_constraints=equality,
+            inequality_constraints=inequality,
+            outcome=classify_outcome(
+                converged, infeasibility, objective, problem.objective
+            ),
+            message=f"NLopt status {status}",
+            evaluations=cache.evaluations,
+            derivative_evaluations=cache.derivative_evaluations,
+            objective=objective,
+            known_objective=problem.objective,
+            solution_error=_solution_error(problem, value),
+            infeasibility=infeasibility,
+            seconds=seconds,
+            compile_seconds=compile_seconds,
+        )
+
+
+@dataclass(frozen=True)
 class IpoptConfiguration:
     """IPOPT through cyipopt, with exact Hessians of the Lagrangian from JAX.
 
@@ -723,6 +850,18 @@ _CONFIGURATION_LIST: list[Configuration] = [
         name="scipy_trust_constr",
         description="SciPy's trust-constr with quasi-Newton Hessians.",
         method="trust-constr",
+    ),
+    NloptConfiguration(
+        name="nlopt_auglag_lbfgs",
+        description="NLopt's augmented Lagrangian, with L-BFGS on each subproblem.",
+        algorithm="AUGLAG",
+        local="LD_LBFGS",
+    ),
+    NloptConfiguration(
+        name="nlopt_auglag_slsqp",
+        description="NLopt's augmented Lagrangian, with SLSQP on each subproblem.",
+        algorithm="AUGLAG",
+        local="LD_SLSQP",
     ),
 ]
 """The configurations, in the order the scripts list them."""
