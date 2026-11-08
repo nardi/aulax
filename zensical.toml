@@ -85,14 +85,14 @@ toggle.name = "Switch to light mode"
 icon = "fontawesome/brands/github"
 link = "https://github.com/nardi/aulax"
 
-# The mkdocstrings plugin renders the API reference directly from the source
-# code and its docstrings. The Python handler reads the package from the "src"
-# directory. See https://zensical.org/docs/setup/extensions/mkdocstrings/.
 # The directory of the theme contains two files of its Python packaging, which the site
 # does not need.
 [project.plugins.exclude]
 glob = ["mkdocs_theme.yml", "__init__.py", "__pycache__/*"]
 
+# The mkdocstrings plugin renders the API reference directly from the source
+# code and its docstrings. The Python handler reads the package from the "src"
+# directory. See https://zensical.org/docs/setup/extensions/mkdocstrings/.
 [project.plugins.mkdocstrings.handlers.python]
 paths = ["src"]
 inventories = ["https://docs.python.org/3/objects.inv"]
