@@ -893,6 +893,30 @@ _CONFIGURATION_LIST: list[Configuration] = [
             ),
         ),
     ),
+    AulaxConfiguration(
+        name="nonlinear_cg_tight_floor",
+        description="Nonlinear conjugate gradient with a tight tolerance schedule, "
+        "no gradient scaling and an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.NonlinearCG(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
+    AulaxConfiguration(
+        name="prodigy_tight_floor",
+        description="Prodigy with a tight tolerance schedule, no gradient scaling "
+        "and an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.contrib.prodigy(), rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-6),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
     ScipyConfiguration(
         name="scipy_slsqp",
         description="SciPy's SLSQP.",
