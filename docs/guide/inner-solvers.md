@@ -123,7 +123,9 @@ def diagonal_preconditioner(hessian_vector_product, point):
 
 
 preconditioned = alx.AugmentedLagrangian(
-    inner=alx.Newton(hessian=alx.MatrixFreeHessian(preconditioner=diagonal_preconditioner))
+    inner=alx.Newton(
+        hessian=alx.MatrixFreeHessian(preconditioner=diagonal_preconditioner)
+    )
 )
 solution = alx.minimise(chain, preconditioned, jnp.zeros(20), target, max_steps=4096)
 assert solution.stats.infeasibility <= 1e-6

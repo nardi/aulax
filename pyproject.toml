@@ -83,3 +83,11 @@ combine-as-imports = true
 [tool.ty.environment]
 # The tests import `tests/problems.py` and the `benchmarks` package at the root.
 extra-paths = [".", "tests"]
+
+[[tool.ty.overrides]]
+# The benchmarks and the lazy imports in `_hessian` use optional dependencies
+# that the default environment does not install.
+include = ["benchmarks/**", "src/aulax/_hessian.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"

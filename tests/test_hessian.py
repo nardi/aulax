@@ -70,7 +70,7 @@ def test_shifted_step_matches_the_eigendecomposition_step_for_a_definite_matrix(
     for radius in (10.0, 0.5, 0.05):
         radius = jnp.asarray(radius)
         expected = trust_region_step(matrix, gradient, radius)
-        actual = shifted_trust_region_step(solve, gradient, radius, 10.0)
+        actual = shifted_trust_region_step(solve, gradient, radius, jnp.asarray(10.0))
         np.testing.assert_allclose(
             jnp.linalg.norm(actual), jnp.linalg.norm(expected), rtol=2e-2
         )
@@ -88,7 +88,9 @@ def test_shifted_trust_region_step_stays_in_the_region_for_an_indefinite_matrix(
         correction = jax.scipy.linalg.cho_solve((factor, True), step)
         return step, correction, positive
 
-    step = shifted_trust_region_step(solve, gradient, jnp.asarray(0.5), 3.0)
+    step = shifted_trust_region_step(
+        solve, gradient, jnp.asarray(0.5), jnp.asarray(3.0)
+    )
     assert jnp.linalg.norm(step) <= 0.5 * 1.02
     assert gradient @ step + 0.5 * step @ matrix @ step < 0.0
 
