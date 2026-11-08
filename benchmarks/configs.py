@@ -837,6 +837,62 @@ _CONFIGURATION_LIST: list[Configuration] = [
             stationarity_tolerance=1e-4,
         ),
     ),
+    AulaxConfiguration(
+        name="nonlinear_cg",
+        description="Nonlinear conjugate gradient inner solves with a line search.",
+        solver=alx.AugmentedLagrangian(inner=optx.NonlinearCG(rtol=1e-8, atol=1e-8)),
+    ),
+    AulaxConfiguration(
+        name="nonlinear_cg_gradient",
+        description="Nonlinear conjugate gradient with gradient stopping and a "
+        "stationarity check.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.NonlinearCG(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+        ),
+    ),
+    AulaxConfiguration(
+        name="dog",
+        description="DoG inner solves, a parameter-free step size schedule.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.contrib.dog(), rtol=1e-8, atol=1e-8),
+        ),
+    ),
+    AulaxConfiguration(
+        name="prodigy",
+        description="Prodigy inner solves, a parameter-free Adam variant.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.contrib.prodigy(), rtol=1e-8, atol=1e-8),
+        ),
+    ),
+    AulaxConfiguration(
+        name="dadapt_adamw",
+        description="D-Adaptation AdamW inner solves, a parameter-free Adam variant.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(
+                optax.contrib.dadapt_adamw(), rtol=1e-8, atol=1e-8
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lion_1e-3",
+        description="Lion inner solves with learning rate 1e-3.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(
+                optax.lion(learning_rate=1e-3), rtol=1e-8, atol=1e-8
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lion_1e-4",
+        description="Lion inner solves with learning rate 1e-4.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(
+                optax.lion(learning_rate=1e-4), rtol=1e-8, atol=1e-8
+            ),
+        ),
+    ),
     ScipyConfiguration(
         name="scipy_slsqp",
         description="SciPy's SLSQP.",
