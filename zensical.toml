@@ -41,8 +41,17 @@ nav = [
   { "API reference" = "api/index.md" },
 ]
 
+# The dropdown of the page title that switches to the other documentation sites,
+# which the theme lists by default.
+[project.extra.site_switcher]
+current = "aulax"
+
 [project.theme]
 language = "en"
+# The Tufte theme comes from the `theme` submodule and extends the built-in theme. It
+# loads its own fonts, so the built-in theme loads none from Google Fonts.
+custom_dir = "theme/zensical_tufte"
+font = false
 features = [
   "announce.dismiss",
   "content.code.annotate",
@@ -79,6 +88,11 @@ link = "https://github.com/nardi/aulax"
 # The mkdocstrings plugin renders the API reference directly from the source
 # code and its docstrings. The Python handler reads the package from the "src"
 # directory. See https://zensical.org/docs/setup/extensions/mkdocstrings/.
+# The directory of the theme contains two files of its Python packaging, which the site
+# does not need.
+[project.plugins.exclude]
+glob = ["mkdocs_theme.yml", "__init__.py", "__pycache__/*"]
+
 [project.plugins.mkdocstrings.handlers.python]
 paths = ["src"]
 inventories = ["https://docs.python.org/3/objects.inv"]
