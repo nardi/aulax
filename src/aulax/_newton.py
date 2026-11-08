@@ -8,7 +8,7 @@ import optimistix as optx
 from jax.flatten_util import ravel_pytree
 from jaxtyping import Array, Bool, Float, PyTree, Scalar
 
-from ._hessian import AutoHessian, HessianStrategy, PreparedHessian
+from ._hessian import AutoHessian, HessianStrategy, PreparedHessian, _DensePrepared
 from ._misc import tree_where
 
 
@@ -156,7 +156,7 @@ class Newton(optx.AbstractMinimiser):
         def scalar(flat: Array) -> Scalar:
             return fn(unravel(flat), args)[0]
 
-        if prepared.fused:
+        if isinstance(prepared, _DensePrepared):
             f_eval, aux_eval, gradient_eval, hessian_eval = prepared.evaluate_fused(
                 with_aux, flat_eval
             )

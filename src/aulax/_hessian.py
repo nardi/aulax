@@ -151,7 +151,7 @@ def trust_region_step(
         return jnp.linalg.norm(projected / (eigenvalues + shift))
 
     positive_definite = eigenvalues[0] > floor
-    newton_fits = positive_definite & (step_length(0.0) <= radius)
+    newton_fits = positive_definite & (step_length(jnp.asarray(0.0)) <= radius)
     lower = jnp.maximum(0.0, -eigenvalues[0]) + floor
     upper = lower + jnp.linalg.norm(gradient) / radius + largest
 
@@ -422,7 +422,7 @@ class _DensePrepared:
         self.size = size
         self.dtype = dtype
         self.use_eigendecomposition = size <= eigendecomposition_limit
-        self.data_shape = (size, size)
+        self.data_shape: tuple[int, ...] = (size, size)
 
     fused = True
 
@@ -469,7 +469,7 @@ class _MatrixFreePrepared:
         self.max_iterations = (
             min(2 * size + 20, 500) if max_iterations is None else max_iterations
         )
-        self.data_shape = (size,)
+        self.data_shape: tuple[int, ...] = (size,)
 
     def evaluate(self, scalar, flat_y):
         return flat_y
@@ -509,8 +509,11 @@ class _SparsePrepared:
         self.hessian_positions = inverse[: self.rows.size]
         self.diagonal_positions = inverse[self.rows.size :]
         self.entry_indices = np.stack([self.rows, self.cols], axis=1).astype(np.int32)
-        self.data_shape = (self.rows.size,)
-        tag_pattern = BCOO((np.ones(len(self.union)), self.union), shape=(size, size))
+        self.data_shape: tuple[int, ...] = (self.rows.size,)
+        tag_pattern = BCOO(
+            (jnp.asarray(np.ones(len(self.union))), jnp.asarray(self.union)),
+            shape=(size, size),
+        )
         self.tag = splineax.sparsity_pattern_tag(tag_pattern)
         self.dtype = dtype
 
@@ -521,7 +524,9 @@ class _SparsePrepared:
         data = function(flat_y).data
         if self.check:
             dense = jax.hessian(scalar)(flat_y)
-            sparse = BCOO((data, self.entry_indices), shape=(self.size,) * 2)
+            sparse = BCOO(
+                (data, jnp.asarray(self.entry_indices)), shape=(self.size,) * 2
+            )
             difference = jnp.max(jnp.abs(sparse.todense() - dense))
             data = eqx.error_if(
                 data,
@@ -532,7 +537,7 @@ class _SparsePrepared:
         return data
 
     def matvec(self, scalar, data, vector):
-        matrix = BCOO((data, self.entry_indices), shape=(self.size,) * 2)
+        matrix = BCOO((data, jnp.asarray(self.entry_indices)), shape=(self.size,) * 2)
         return matrix @ vector
 
     def _operator(self, data, shift):
@@ -547,7 +552,7 @@ class _SparsePrepared:
             .add(jnp.maximum(shift, floor))
         )
         matrix = BCOO(
-            (values, self.union),
+            (values, jnp.asarray(self.union)),
             shape=(self.size,) * 2,
             indices_sorted=True,
             unique_indices=True,
@@ -681,7 +686,7 @@ class SparseHessian(eqx.Module):
     This is a debugging aid, since it computes a dense Hessian at every step.
     """
 
-    def prepare(self, fn: Callable, y: PyTree, args: PyTree) -> PreparedHessian:
+    def prepare(self, fn: Callable, y: PyTree, args: PyTree) -> _SparsePrepared:
         """Return the sparse Hessian, detecting its pattern if needed."""
         asdex, splineax = _import_sparse_libraries()
         flat, unravel = ravel_pytree(y)
