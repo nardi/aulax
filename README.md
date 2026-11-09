@@ -34,16 +34,16 @@ solution = alx.minimise(problem, solver, jnp.zeros(2), jnp.array([2.0, 1.0]))
 print(solution.value, solution.multipliers)
 ```
 
-## Why?
+## Motivation
 
-SciPy's constrained methods run on the CPU, one problem at a time, and you can't differentiate through them. optimistix runs on accelerators and differentiates, but it has no constraints. aulax fills that gap for general nonlinear problems:
+SciPy's constrained methods run on the CPU, one problem at a time, and you can't differentiate through them. optimistix runs on accelerators and differentiates, but it has no constraints. aulax supports constraints on general nonlinear problems and keeps both of these properties of optimistix:
 
-1. It only needs gradients. It never forms a constraint Jacobian or factors a KKT matrix during the solve, so memory stays proportional to the number of variables and constraints.
-2. It runs as a single `jax.lax.while_loop`, so it works under `jax.jit` and `jax.vmap`, and a batch of problems progresses without waiting on its slowest member between multiplier updates.
+1. It only needs gradients. It never forms a constraint Jacobian or factors a KKT matrix during the solve, so its memory use is proportional to the number of variables and constraints.
+2. It runs as a single `jax.lax.while_loop`, so it works under `jax.jit` and `jax.vmap`, and each problem in a batch updates its multipliers when its own inner solve ends, without waiting for the slowest problem.
 3. It differentiates the solution through the KKT conditions with one linear solve, whatever the number of iterations.
-4. The problem function can pass a warm start to its next evaluation, which helps when the model contains an iterative solve of its own.
+4. The problem function can return a `state` that is passed to its next evaluation as a warm start, which helps when the model contains an iterative solve of its own.
 
-The method has its costs. It needs more function evaluations than SQP or interior point methods on small problems, and it slows down on problems with many bound constraints. The documentation says more about both.
+The method needs more function evaluations than SQP or interior point methods on small problems, and it slows down on problems with many bound constraints. The documentation describes both in more detail.
 
 ## Status
 

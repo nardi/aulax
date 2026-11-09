@@ -1,6 +1,6 @@
 # Advanced usage
 
-This page covers two topics that come up once a basic solve works: making solves fast, and differentiating through them. All examples use the same problem, the projection of a point $p$ onto the probability simplex,
+This page describes two topics beyond a basic solve, which are the speed of solves and differentiation through them. All examples use the same problem, the projection of a point $p$ onto the probability simplex,
 
 $$
 \min_y \lVert y - p \rVert^2 \quad \text{subject to} \quad \sum_i y_i = 1, \quad y \ge 0.
@@ -51,7 +51,7 @@ assert jnp.allclose(projections[0], jnp.array([0.55, 0.45, 0.0]), atol=1e-5)
 assert jnp.allclose(projections[2], jnp.array([1.0, 0.0, 0.0]), atol=1e-5)
 ```
 
-Every problem in the batch runs until the slowest one finishes, since the batch shares one loop. Within that loop, each problem updates its own multipliers whenever its own inner solve is done, without waiting for the others. The [theory](../theory.md#the-solver-loop) page explains why the loop is built that way.
+Every problem in the batch runs until the slowest one finishes, since the batch shares one loop. Within that loop, each problem updates its own multipliers whenever its own inner solve is done, without waiting for the others. The [theory](../theory.md#the-solver-loop) page explains the reason for this design.
 
 ### Precision
 
@@ -70,7 +70,7 @@ assert jnp.allclose(solution.value, jnp.array([0.55, 0.45, 0.0]), atol=1e-3)
 
 ### Inner minimiser
 
-The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. Any optimistix minimiser can do the inner solves. `optx.BFGS` stores a dense Hessian approximation, which costs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `optx.LBFGS` keeps only a few recent gradient differences and is usually the better choice:
+The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. Any optimistix minimiser can do the inner solves. `optx.BFGS` stores a dense Hessian approximation, which uses $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `optx.LBFGS` stores only a few recent gradient differences and is usually the better choice:
 
 <!-- name: test_advanced_usage -->
 ```python
@@ -86,7 +86,7 @@ The inequality terms of the augmented Lagrangian have a kink in their second der
 
 ### Initial penalty
 
-The default initial penalty scales with the objective at `y0`. For the projection above, the objective is large while `y0` is feasible, and the formula starts with a penalty of about 340, which makes the first inner problems badly conditioned. A fixed initial penalty of 1 cuts the number of steps by a factor of four here:
+The default initial penalty scales with the objective at `y0`. For the projection above, the objective is large while `y0` is feasible, and the formula gives an initial penalty of about 340, which makes the first inner problems badly conditioned. A fixed initial penalty of 1 cuts the number of steps by a factor of four here:
 
 <!-- name: test_advanced_usage -->
 ```python
@@ -99,7 +99,7 @@ gentle = alx.minimise(simplex_projection, gentle_solver, jnp.full(100, 0.01), po
 assert gentle.stats.num_steps < default_steps
 ```
 
-When constraints have very different scales, `AlgencanPenaltyUpdate(per_constraint=True)` gives each constraint element its own penalty, so a hard constraint does not raise the penalty on all the others. Scaling the residuals in the problem function, so that a violation of 1 means roughly the same thing for every constraint, helps just as much and costs nothing.
+When constraints have very different scales, `AlgencanPenaltyUpdate(per_constraint=True)` gives each constraint element its own penalty, so a hard constraint does not raise the penalty on all the others. Scaling the residuals in the problem function, so that a violation of 1 means roughly the same thing for every constraint, has the same effect and needs no extra computation.
 
 ### Warm starts
 
@@ -130,7 +130,7 @@ Here the warm start takes about a third of the steps of the cold one. The penalt
 
 ### Implicit derivatives
 
-The solution of a problem depends on its `args`, and on any arrays the problem function closes over. `jax.grad`, `jax.jacrev` and `jax.jacfwd` all work on `alx.minimise`, and by default they use the implicit function theorem on the KKT conditions at the solution. This costs one linear solve, whatever the number of steps the solve itself took, and it never stores the iterations.
+The solution of a problem depends on its `args`, and on any arrays the problem function closes over. `jax.grad`, `jax.jacrev` and `jax.jacfwd` all work on `alx.minimise`, and by default they use the implicit function theorem on the KKT conditions at the solution. This requires one linear solve, whatever the number of steps the solve itself took, and the iterations are not stored.
 
 For the simplex projection, the Jacobian of the projection with respect to $p$ has a closed form. On the set $S$ of positive entries, the projection subtracts the mean excess, so its Jacobian there is $I - \frac{1}{\lvert S \rvert} \mathbf{1}\mathbf{1}^\top$, and it is zero elsewhere:
 
@@ -148,11 +148,11 @@ expected = jnp.array([[0.5, -0.5, 0.0], [-0.5, 0.5, 0.0], [0.0, 0.0, 0.0]])
 assert jnp.allclose(jacobian, expected, atol=1e-6)
 ```
 
-Derivatives flow through `Solution.value` and `Solution.multipliers`. The `state`, `aux` and `stats` of a solution are not differentiable, and taking a gradient through them raises an error.
+`Solution.value` and `Solution.multipliers` are differentiable. The `state`, `aux` and `stats` of a solution are not differentiable, and taking a gradient through them raises an error.
 
 ### Linear solver
 
-The default `optx.ImplicitAdjoint()` builds the KKT matrix explicitly and factors it, which is exact and robust but costs $(n + m)^2$ memory for $n$ variables and $m$ constraints. For large problems, a Krylov solver from lineax only needs products with the matrix, which cost about one gradient evaluation each:
+The default `optx.ImplicitAdjoint()` builds the KKT matrix explicitly and factors it, which is exact and robust but uses $(n + m)^2$ memory for $n$ variables and $m$ constraints. For large problems, a Krylov solver from lineax only needs products with the matrix, each of which takes about as much work as one gradient evaluation:
 
 <!-- name: test_advanced_usage -->
 ```python
@@ -175,4 +175,4 @@ assert jnp.allclose(unrolled, expected, atol=1e-4)
 
 ### Degenerate constraints
 
-The implicit derivative counts an inequality constraint as active when its multiplier is positive. A constraint that holds with equality at the solution but has a zero multiplier sits exactly on the boundary between the two cases. The derivative is not unique there, and aulax treats the constraint as inactive, which gives one of the valid one-sided derivatives.
+The implicit derivative counts an inequality constraint as active when its multiplier is positive. A constraint that holds with equality at the solution but has a zero multiplier is exactly on the boundary between the two cases. The derivative is not unique there, and aulax treats the constraint as inactive, which gives one of the valid one-sided derivatives.
