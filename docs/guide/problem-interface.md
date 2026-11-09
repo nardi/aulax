@@ -1,8 +1,8 @@
 # Problem interface
 
-Every problem in aulax is one function, called as `problem(y, args, state)`, that returns an `alx.Evaluation`. This page goes through the parts of that contract: the fields of `Evaluation`, the shapes that `y` and the constraints can take, and the `state` and `aux` outputs.
+Every problem in aulax is one function, called as `problem(y, args, state)`, that returns an `alx.Evaluation`. This page describes the parts of that contract: the fields of `Evaluation`, the shapes that `y` and the constraints can take, and the `state` and `aux` outputs.
 
-The reason for bundling everything into one function is that the objective and the constraints often share most of their work. Think of a simulation whose output feeds both the cost and the limits on it. With one function, that shared work runs once per point, and the gradient the solver needs costs one reverse pass through it.
+The reason for bundling everything into one function is that the objective and the constraints often share most of their work. Think of a simulation whose output feeds both the cost and the limits on it. With one function, that shared work runs once per point, and the gradient that the solver needs is computed with one reverse pass through it.
 
 ## Evaluation fields
 
@@ -14,9 +14,9 @@ An `Evaluation` has five fields:
 - `state`, which the solver passes to the next call of the problem function,
 - `aux`, any extra output we want back, which the solver never reads.
 
-Only `objective` is required. A problem without equality constraints leaves `equality` at `None`, and the same goes for the other fields.
+Only `objective` is required. A problem without equality constraints has `equality` set to `None`, which is the default, and the same holds for the other fields.
 
-The inequality convention is $g(y) \le 0$. A constraint of the form $a(y) \ge b$ becomes `b - a(y)`, and bounds on the variables are ordinary inequality constraints. A box $l \le y \le u$ becomes two residuals:
+The inequality convention is $g(y) \le 0$. A constraint of the form $a(y) \ge b$ is written as the residual `b - a(y)`, and bounds on the variables are ordinary inequality constraints. A box $l \le y \le u$ is written as two residuals:
 
 <!-- name: test_bounds -->
 ```python
@@ -44,7 +44,7 @@ assert jnp.allclose(solution.value, 1.0, atol=1e-5)
 
 ## Pytrees
 
-The variables `y` can be any pytree of arrays, and so can each kind of constraint. The inequality constraints above are a dictionary with two entries, and the multipliers come back in the same structure:
+The variables `y` can be any pytree of arrays, and so can each kind of constraint. The inequality constraints above are a dictionary with two entries, and `solution.multipliers` has the same structure:
 
 <!-- name: test_bounds -->
 ```python
@@ -52,7 +52,7 @@ assert jnp.allclose(solution.multipliers.inequality["upper"], 4.0, atol=1e-3)
 assert jnp.allclose(solution.multipliers.inequality["lower"], 0.0)
 ```
 
-The solver never flattens these pytrees into one vector. It updates the multipliers and penalties leaf by leaf, so a problem whose variables or constraints are sharded across devices keeps that sharding.
+The solver never flattens these pytrees into one vector. It updates the multipliers and penalties leaf by leaf, so variables or constraints that are sharded across devices keep their sharding.
 
 ## Problem state
 
@@ -87,7 +87,7 @@ solver = alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-8, atol=1e-8))
 solution = alx.minimise(cubic_root_problem, solver, jnp.zeros(2), state=jnp.array(0.0))
 ```
 
-The first call receives the `state` we pass to `alx.minimise`. The solution carries the state and the aux output from its final evaluation, so we can check that three Newton steps were enough:
+The first call receives the `state` we pass to `alx.minimise`. The solution contains the state and the aux output from its final evaluation, so we can check that three Newton steps were enough:
 
 <!-- name: test_state -->
 ```python
@@ -95,17 +95,17 @@ assert abs(solution.aux) < 1e-10
 assert jnp.allclose(solution.state**3 + solution.state, solution.value[0])
 ```
 
-Three rules keep this correct, and aulax relies on all of them:
+aulax assumes that three rules hold for `state`:
 
-1. **Fixed structure.** Every `state` the function returns must have the same pytree structure, shapes and dtypes as the initial one. The solver runs in a single `jax.lax.while_loop`, and the state is part of what that loop carries.
+1. **Fixed structure.** Every `state` the function returns must have the same pytree structure, shapes and dtypes as the initial one. The solver runs in a single `jax.lax.while_loop`, and the state is part of the carry of that loop.
 2. **No effect on the outputs.** The objective and constraints must not depend on `state` beyond the tolerance of the computation it warm-starts. The inner minimiser compares function values between steps in its line search, and those comparisons only make sense if the same `y` always gives the same value.
-3. **No gradient.** The solver wraps `state` in `jax.lax.stop_gradient` before every call. Differentiating through a warm start would cost memory and gives nothing useful.
+3. **No gradient.** The solver wraps `state` in `jax.lax.stop_gradient` before every call. Differentiating through a warm start would use memory and give no useful derivative.
 
-The state is threaded from each point the inner minimiser accepts. A rejected trial point in a line search does not pass its state on.
+The `state` that is passed to the next call is the one returned at the last point that the inner minimiser accepted. The `state` returned at a rejected trial point in a line search is not passed on.
 
 ## Auxiliary output
 
-The `aux` field carries anything else we want to look at after the solve, such as diagnostics of an inner computation. Like `state`, it has to be a pytree of arrays with a fixed structure. The solver returns the `aux` from the evaluation at the solution.
+The `aux` field contains anything else we want to look at after the solve, such as diagnostics of an inner computation. Like `state`, it has to be a pytree of arrays with a fixed structure. The solver returns the `aux` from the evaluation at the solution.
 
 ## Type annotations
 
