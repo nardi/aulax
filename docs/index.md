@@ -49,7 +49,7 @@ Several JAX libraries solve parts of this problem, each with different design ch
 2. [jaxls](https://github.com/brentyi/jaxls) solves sparse nonlinear least-squares problems, like factor graphs, with Levenberg-Marquardt and an augmented Lagrangian for constraints. aulax takes a general objective instead of a sum of squares.
 3. [slsqp-jax](https://pypi.org/project/slsqp-jax/) implements SLSQP with a dense quasi-Newton Hessian, which suits small problems.
 
-In aulax, a problem is one function that returns the objective and all constraints together. The objective and the constraints of a real model usually share most of their work, like a simulation whose output both of them depend on. With one function, that work runs once per point. The function can also pass a warm start to its next evaluation through its `state`, which matters when the model contains an iterative solve of its own.
+In aulax, a problem is one function that returns the objective and all constraints together. The objective and the constraints of a real model usually share most of their work, such as a simulation whose output is used by both. With one function, that work runs once per point. The function can also pass a warm start to its next evaluation through its `state`, which matters when the model contains an iterative solve of its own.
 
 The augmented Lagrangian method needs more function evaluations than SQP or an interior point method on small problems, and it slows down on problems with many bound constraints, because the inner problems contain the bounds only as penalty terms. The [advanced usage](guide/advanced-usage.md) page shows an example of this.
 
