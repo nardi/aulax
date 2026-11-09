@@ -138,3 +138,7 @@ Matrix-free mode stops each inner solve on the gradient of the augmented Lagrang
 ## Other minimisers
 
 Any optimistix minimiser can still do the inner solves, for example `optx.BFGS` or `optx.LBFGS`. They need only first derivatives, which matters for functions that cannot be differentiated twice. The stationarity check is then off by default, since their stopping tests do not reach it. Set `stationarity_tolerance` to turn it on.
+
+A line search can follow a direction along which the objective decreases faster than the penalty term grows, which happens for a cubic objective with bounds. `unbounded_threshold` handles this for minimisers other than `Newton`. When the augmented Lagrangian at an inner iterate is below $-10^{20}$, the solver returns to the start of the inner solve and grows the penalty.
+
+On the Hock-Schittkowski benchmark, `optx.LBFGS` solved 46 of the 48 problems that `Newton` solved, with about 5 times as many evaluations on those problems. It needed a tight tolerance schedule, such as `GeometricToleranceSchedule(initial=1e-8)` with `rtol=atol=1e-10`, and no problem scaling. The `lbfgs_tight_penalty_10` benchmark configuration has these settings.

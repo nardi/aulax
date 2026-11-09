@@ -1,3 +1,5 @@
+import math
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -278,7 +280,7 @@ def test_unbounded_threshold_restarts_diverging_inner_solve():
     # The cubic objective falls faster than the quadratic penalty grows as
     # `y[0]` decreases, so without the check the inner solve diverges.
     plain = alx.minimise(
-        hs33, solver_with_threshold(None), y0, max_steps=20_000, throw=False
+        hs33, solver_with_threshold(math.inf), y0, max_steps=20_000, throw=False
     )
     assert plain.result != alx.RESULTS.successful
 

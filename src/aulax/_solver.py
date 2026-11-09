@@ -120,9 +120,10 @@ class AugmentedLagrangian(eqx.Module):
     this threshold, or the iterate is not finite, the inner solve has left the
     region where the penalty term bounds the objective. The solver then returns to
     the point where the inner solve started and grows the penalty. A line search
-    can follow such a direction for many steps, while a trust region usually stops
-    near the start. `None` turns the check off. The default of $10^{20}$ is the
-    `fmin` of ALGENCAN.
+    can follow such a direction for many steps, while the trust region of `Newton`
+    stops near the start. `None` selects $10^{20}$, the `fmin` of ALGENCAN, for
+    minimisers other than `Newton`, and turns the check off for `Newton`.
+    Infinity turns the check off.
     """
     verbose: bool = eqx.field(default=False, static=True)
     """Whether to print one line per outer iteration.
@@ -144,6 +145,12 @@ class AugmentedLagrangian(eqx.Module):
             return self.feasibility_tolerance
         newton_default = 1e-8 if isinstance(self.inner, Newton) else 1e-6
         return dtype_default(dtype, newton_default, 1e-3)
+
+    def unbounded_threshold_for_inner(self) -> float:
+        """Return `unbounded_threshold`, or its default for `inner`."""
+        if self.unbounded_threshold is not None:
+            return self.unbounded_threshold
+        return math.inf if isinstance(self.inner, Newton) else 1e20
 
     def penalty_freeze_factor_for_inner(self) -> float:
         """Return `penalty_freeze_factor`, or its default for `inner`."""

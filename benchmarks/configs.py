@@ -917,6 +917,30 @@ _CONFIGURATION_LIST: list[Configuration] = [
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
         ),
     ),
+    AulaxConfiguration(
+        name="lbfgs_tight_floor",
+        description="L-BFGS with a tight tolerance schedule, no gradient scaling and "
+        "an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.LBFGS(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lbfgs_tight_penalty_10",
+        description="L-BFGS with a tight tolerance schedule, no gradient scaling and "
+        "an initial penalty of ten.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.LBFGS(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=10.0),
+        ),
+    ),
     ScipyConfiguration(
         name="scipy_slsqp",
         description="SciPy's SLSQP.",

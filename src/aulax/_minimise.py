@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 from typing import Any, Generic
 
@@ -459,10 +460,11 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             if solver.verbose:
                 print_outer_update(stepped, updated, accepted, gradient)
             new_loop = tree_where(stepped.update_pending, updated, stepped)
-        if solver.unbounded_threshold is not None:
+        unbounded_threshold = solver.unbounded_threshold_for_inner()
+        if unbounded_threshold < math.inf:
             checked = stepped.evaluation if accepted is None else accepted
             value = augmented_lagrangian(checked, loop.multipliers, loop.penalty)
-            unbounded = (value < -solver.unbounded_threshold) | jnp.invert(
+            unbounded = (value < -unbounded_threshold) | jnp.invert(
                 _tree_all_finite(new_loop.y)
             )
             new_loop = tree_where(unbounded, restart_inner_solve(loop), new_loop)
