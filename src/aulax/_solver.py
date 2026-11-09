@@ -113,6 +113,17 @@ class AugmentedLagrangian(eqx.Module):
     raised to this factor times that, so that a solve with a large penalty can still
     end. Zero turns the rule off.
     """
+    unbounded_threshold: float | None = None
+    r"""The magnitude below which the augmented Lagrangian counts as unbounded.
+
+    When the value of the augmented Lagrangian at an inner iterate is below minus
+    this threshold, or the iterate is not finite, the inner solve has left the
+    region where the penalty term bounds the objective. The solver then returns to
+    the point where the inner solve started and grows the penalty. A line search
+    can follow such a direction for many steps, while a trust region usually stops
+    near the start. `None` turns the check off. The default of $10^{20}$ is the
+    `fmin` of ALGENCAN.
+    """
     verbose: bool = eqx.field(default=False, static=True)
     """Whether to print one line per outer iteration.
 

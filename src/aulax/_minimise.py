@@ -59,6 +59,8 @@ class _LoopState(eqx.Module):
 
     y: PyTree[Array]
     """The current point of the inner solve."""
+    inner_start_y: PyTree[Array]
+    """The point at which the current inner solve started."""
     inner_state: PyTree[Array]
     """The array part of the inner solver state."""
     evaluation: Evaluation
@@ -354,6 +356,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         )
         return _LoopState(
             y=loop.y,
+            inner_start_y=loop.y,
             inner_state=new_dynamic_inner_state,
             evaluation=evaluation,
             multipliers=new_multipliers,
@@ -367,6 +370,43 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             num_outer_steps=loop.num_outer_steps + 1,
             terminate=converged | infeasible,
             result=RESULTS.where(infeasible, RESULTS.infeasible, loop.result),
+        )
+
+    def restart_inner_solve(loop: _LoopState) -> _LoopState:
+        """Return to the start of the inner solve with a larger penalty.
+
+        The penalty update is called with an infeasibility that has not decreased,
+        so it grows the penalty as it would after a failed inner solve. When the
+        penalty is already at its maximum, the solve ends as infeasible.
+        """
+        stagnant = tree_full_like(loop.previous_infeasibility, jnp.inf)
+        decreased = tree_full_like(loop.previous_infeasibility, 0.0)
+        new_penalty, penalty_stalled = solver.penalty_update.update_penalty(
+            loop.penalty, stagnant, decreased
+        )
+        inner_args = _InnerArgs(
+            inner_user_args, loop.evaluation.state, loop.multipliers, new_penalty
+        )
+        return eqx.tree_at(
+            lambda loop: (
+                loop.y,
+                loop.inner_state,
+                loop.penalty,
+                loop.inner_steps,
+                loop.update_pending,
+                loop.terminate,
+                loop.result,
+            ),
+            loop,
+            (
+                loop.inner_start_y,
+                reinitialize_inner_state(loop.inner_start_y, inner_args),
+                new_penalty,
+                jnp.array(0),
+                jnp.array(False),
+                penalty_stalled,
+                RESULTS.where(penalty_stalled, RESULTS.infeasible, loop.result),
+            ),
         )
 
     def print_outer_update(
@@ -419,6 +459,13 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             if solver.verbose:
                 print_outer_update(stepped, updated, accepted, gradient)
             new_loop = tree_where(stepped.update_pending, updated, stepped)
+        if solver.unbounded_threshold is not None:
+            checked = stepped.evaluation if accepted is None else accepted
+            value = augmented_lagrangian(checked, loop.multipliers, loop.penalty)
+            unbounded = (value < -solver.unbounded_threshold) | jnp.invert(
+                _tree_all_finite(new_loop.y)
+            )
+            new_loop = tree_where(unbounded, restart_inner_solve(loop), new_loop)
         return eqx.tree_at(lambda loop: loop.num_steps, new_loop, loop.num_steps + 1)
 
     def keep_going(loop: _LoopState) -> Bool[Array, ""]:
@@ -431,6 +478,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
 
     loop0 = _LoopState(
         y=y0,
+        inner_start_y=y0,
         inner_state=dynamic_inner_state0,
         evaluation=evaluation0,
         multipliers=safeguarded_multipliers,
