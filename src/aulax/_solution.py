@@ -4,6 +4,7 @@ import equinox as eqx
 import optimistix as optx
 from jaxtyping import Array, Int, Scalar
 
+from ._bounds import Bounds
 from ._problem import Aux, Constraints, State, Y
 
 
@@ -37,7 +38,11 @@ class Statistics(eqx.Module):
     $\lVert \min(-g, \mu) \rVert_\infty$.
     """
     stationarity: Scalar
-    r"""The largest element of the gradient of the Lagrangian at the solution."""
+    r"""The largest element of the gradient of the Lagrangian at the solution.
+
+    With bounds, only the part of the gradient that points into the box counts at
+    a variable that is at a bound.
+    """
 
 
 class Solution(eqx.Module, Generic[Y, State, Aux]):
@@ -59,3 +64,11 @@ class Solution(eqx.Module, Generic[Y, State, Aux]):
     """The aux output of the problem at the solution."""
     stats: Statistics
     """Statistics about the solve."""
+    bound_multipliers: Bounds | None = None
+    r"""The multipliers of the bounds on `value`, or `None` without bounds.
+
+    Each field has the shape of `value`. An element is the reduced cost of that
+    variable, which is the part of the gradient of the Lagrangian that the
+    active bound balances. It is nonnegative, and zero for a bound that is not
+    active or does not exist.
+    """
