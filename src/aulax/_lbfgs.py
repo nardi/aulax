@@ -285,7 +285,7 @@ class LBFGS(optx.AbstractMinimiser):
         )
 
         def projected_gradient_size(point: Array, gradient: Array) -> Scalar:
-            """Return the largest element of the step to the projected gradient step."""
+            """Return the largest absolute element of the projected gradient."""
             if scaled_box is None:
                 return jnp.max(jnp.abs(gradient))
             step_to_box = jnp.clip(point - gradient, *scaled_box)
