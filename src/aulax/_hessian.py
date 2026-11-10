@@ -406,8 +406,15 @@ class PreparedHessian(Protocol):
         data: Array,
         gradient: Array,
         radius: Scalar,
+        free: Array | None = None,
     ) -> Array:
-        """Return the step inside the trust region."""
+        """Return the step inside the trust region.
+
+        When `free` is a boolean array, the step is zero at the entries where it is
+        `False`. At the other entries, the step minimizes the quadratic model of the
+        free variables, with the rows and columns of the fixed variables removed
+        from the Hessian.
+        """
         ...
 
 
@@ -461,7 +468,16 @@ class _DensePrepared:
     def matvec(self, scalar, data, vector):
         return data @ vector
 
-    def step(self, scalar, data, gradient, radius):
+    def step(self, scalar, data, gradient, radius, free=None):
+        if free is not None:
+            # The rows and columns of the fixed variables are replaced by those of
+            # the identity, and the gradient is zero there. Each fixed variable then
+            # decouples from the others and has a zero step.
+            both_free = free[:, None] & free[None, :]
+            data = jnp.where(both_free, data, 0.0) + jnp.diag(
+                jnp.where(free, 0.0, 1.0).astype(data.dtype)
+            )
+            gradient = jnp.where(free, gradient, 0.0)
         if self.use_eigendecomposition:
             return trust_region_step(data, gradient, radius)
         identity = jnp.eye(self.size, dtype=data.dtype)
@@ -495,9 +511,22 @@ class _MatrixFreePrepared:
     def matvec(self, scalar, data, vector):
         return jax.jvp(jax.grad(scalar), (data,), (vector,))[1]
 
-    def step(self, scalar, data, gradient, radius):
-        def product(vector):
+    def step(self, scalar, data, gradient, radius, free=None):
+        def full_product(vector):
             return self.matvec(scalar, data, vector)
+
+        if free is None:
+            product = full_product
+        else:
+
+            def product(vector):
+                # The identity at the fixed variables keeps the operator positive
+                # definite there. The gradient is zero there, so the conjugate
+                # gradient iterates stay at zero at those variables.
+                restricted = jnp.where(free, vector, 0.0)
+                return jnp.where(free, full_product(restricted), vector)
+
+            gradient = jnp.where(free, gradient, 0.0)
 
         apply_inverse = self.preconditioner.build(product, data)
         return _steihaug(product, apply_inverse, gradient, radius, self.max_iterations)
@@ -558,16 +587,21 @@ class _SparsePrepared:
         matrix = BCOO((data, jnp.asarray(self.entry_indices)), shape=(self.size,) * 2)
         return matrix @ vector
 
-    def _operator(self, data, shift):
+    def _operator(self, data, shift, free=None):
         # A matrix with an empty row is exactly singular, which KLU reports as an
         # error. A shift at rounding level avoids that.
         floor = 1e-12 * jnp.maximum(jnp.max(jnp.abs(data), initial=0.0), 1.0)
+        diagonal = jnp.maximum(shift, floor)
+        if free is not None:
+            # The entries of the fixed variables are zero in `data`, so a one on
+            # their diagonal turns their rows and columns into those of the identity.
+            diagonal = diagonal + jnp.where(free, 0.0, 1.0).astype(data.dtype)
         values = (
             jnp.zeros(len(self.union), data.dtype)
             .at[self.hessian_positions]
             .add(data)
             .at[self.diagonal_positions]
-            .add(jnp.maximum(shift, floor))
+            .add(diagonal)
         )
         matrix = BCOO(
             (values, jnp.asarray(self.union)),
@@ -580,10 +614,10 @@ class _SparsePrepared:
     def _solve(self, operator, rhs):
         return lx.linear_solve(operator, rhs, self.solver, throw=False).value
 
-    def step(self, scalar, data, gradient, radius):
-        def shifted(data, gradient, radius):
+    def step(self, scalar, data, gradient, radius, free=None):
+        def shifted(data, gradient, radius, free=None):
             def solve(shift):
-                operator = self._operator(data, shift)
+                operator = self._operator(data, shift, free)
                 step = -self._solve(operator, gradient)
                 correction = self._solve(operator, step)
                 # Without the inertia of the factorization, a descent direction with
@@ -602,7 +636,18 @@ class _SparsePrepared:
             )
             return shifted_trust_region_step(solve, gradient, radius, jnp.max(diagonal))
 
-        return self.splineax.stateful_solve_transform(shifted)(data, gradient, radius)
+        transformed = self.splineax.stateful_solve_transform(shifted)
+        if free is None:
+            return transformed(data, gradient, radius)
+        # Entries of the Hessian that touch a fixed variable are zeroed, and the
+        # gradient is zero at the fixed variables.
+        both_free = free[self.rows] & free[self.cols]
+        return transformed(
+            jnp.where(both_free, data, 0.0),
+            jnp.where(free, gradient, 0.0),
+            radius,
+            free,
+        )
 
 
 # Strategies.
