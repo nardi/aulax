@@ -24,6 +24,7 @@ from ._inner import (
     MinimiserStopping as MinimiserStopping,
     OptimistixStateAccess as OptimistixStateAccess,
 )
+from ._lbfgs import LBFGS as LBFGS
 from ._minimise import minimise as minimise
 from ._newton import Newton as Newton
 from ._problem import (
