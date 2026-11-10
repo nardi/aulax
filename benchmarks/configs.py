@@ -16,6 +16,7 @@ from jaxtyping import PyTree
 
 import aulax as alx
 
+from .bounds import split_bounds
 from .ipopt import import_cyipopt
 from .metrics import classify_outcome, constraint_violation, flat_leaves
 from .problems import BenchmarkProblem
@@ -118,6 +119,12 @@ class AulaxConfiguration:
     """The solver to run."""
     max_steps: int = 20_000
     """The step limit, high enough that it only stops solves that are stuck."""
+    native_bounds: bool = False
+    """Whether the bounds on variables go to the solver as `bounds`, not as rows.
+
+    With this set, `split_bounds` removes the bound residuals from the problem, and
+    `alx.minimise` receives them as an `alx.Bounds` box.
+    """
 
     def solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
         """Solve `problem` and count the evaluations with a debug callback."""
@@ -134,12 +141,28 @@ class AulaxConfiguration:
             nonlocal evaluation_count
             evaluation_count += 1
 
+        solved_problem = problem.problem
+        bounds: alx.Bounds | None = None
+        if self.native_bounds:
+            bounds, solved_problem = split_bounds(
+                problem.problem, problem.y0, problem.args
+            )
+
         def counted_problem(y, args, state):
             jax.debug.callback(count_evaluation)
-            return problem.problem(y, args, state)
+            return solved_problem(y, args, state)
 
         @jax.jit
         def solve(y0, args):
+            if bounds is None:
+                return alx.minimise(
+                    counted_problem,
+                    self.solver,
+                    y0,
+                    args,
+                    max_steps=self.max_steps,
+                    throw=False,
+                )
             return alx.minimise(
                 counted_problem,
                 self.solver,
@@ -147,6 +170,7 @@ class AulaxConfiguration:
                 args,
                 max_steps=self.max_steps,
                 throw=False,
+                bounds=bounds,
             )
 
         y0 = _as_jax(problem.y0)
@@ -940,6 +964,20 @@ _CONFIGURATION_LIST: list[Configuration] = [
             scaling=None,
             penalty_update=alx.AlgencanPenaltyUpdate(initial_value=10.0),
         ),
+    ),
+    AulaxConfiguration(
+        name="newton_bounds",
+        description="The default Newton solver, with the bounds on variables passed "
+        "natively.",
+        solver=alx.AugmentedLagrangian(inner=alx.Newton()),
+        native_bounds=True,
+    ),
+    AulaxConfiguration(
+        name="lbfgs_bounds",
+        description="The default L-BFGS solver, with the bounds on variables passed "
+        "natively.",
+        solver=alx.AugmentedLagrangian(inner=alx.LBFGS()),
+        native_bounds=True,
     ),
     ScipyConfiguration(
         name="scipy_slsqp",
