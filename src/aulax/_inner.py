@@ -6,6 +6,7 @@ import jax.numpy as jnp
 import lineax as lx
 from jaxtyping import Array, Bool, PyTree, Scalar
 
+from ._lbfgs import _LBFGSState
 from ._misc import tree_max_norm, tree_where
 from ._problem import Evaluation
 
@@ -69,7 +70,8 @@ class OptimistixStateAccess(eqx.Module):
     output of the last accepted point in `aux`, and its gradient in
     `f_info.grad`. Other minimisers, like `OptaxMinimiser`, have neither, and
     both methods return `None` for them. Whether the fields exist is decided
-    when the solve is traced, so this adds no work to the compiled loop.
+    when the solve is traced, so this adds no work to the compiled loop. The
+    state of `alx.LBFGS` has the same two fields.
 
     The quasi-Newton minimisers also keep a Hessian approximation, in
     `f_info.hessian` or `f_info.hessian_inv`, and for `LBFGS` in the history of
@@ -87,7 +89,8 @@ class OptimistixStateAccess(eqx.Module):
     therefore resets after a penalty increase. `"keep_scaled"` instead multiplies
     the approximation by the penalty ratio, since the penalty term dominates the
     curvature once the penalty is large. It needs a dense approximation, as BFGS
-    and DFP keep. For `LBFGS` it behaves like `"keep_unless_penalty_increased"`.
+    and DFP keep. For `LBFGS` of optimistix and for `alx.LBFGS`, it behaves like
+    `"keep_unless_penalty_increased"`.
     """
 
     def __check_init__(self):
@@ -130,6 +133,8 @@ class OptimistixStateAccess(eqx.Module):
         """
         if self.hessian_reuse == "reset":
             return new_state
+        if isinstance(new_state, _LBFGSState):
+            return self._transfer_history(old_state, new_state, penalty_ratio)
         function_info = getattr(new_state, "f_info", None)
         names = [
             name
@@ -166,6 +171,29 @@ class OptimistixStateAccess(eqx.Module):
         dynamic_new, _ = eqx.partition(new_state, eqx.is_array)
         dynamic = tree_where(penalty_ratio > 1.0, dynamic_new, dynamic_copied)
         return eqx.combine(dynamic, static)
+
+    def _transfer_history(
+        self,
+        old_state: _LBFGSState,
+        new_state: _LBFGSState,
+        penalty_ratio: Scalar,
+    ) -> _LBFGSState:
+        """Copy the secant pairs of `alx.LBFGS` into `new_state`.
+
+        `"keep"` always copies them. The other choices copy them unless the penalty
+        increased, in which case the history of `new_state` is empty. The secant
+        pairs are in the scaled variables of `old_state`, which are the same as the
+        ones of `new_state`, since both come from the same bounds. The first step of
+        the new inner solve accepts the starting point without a secant pair, so the
+        copied history is intact when the first direction is computed.
+        """
+        if self.hessian_reuse == "keep":
+            history = old_state.history
+        else:
+            history = tree_where(
+                penalty_ratio > 1.0, new_state.history, old_state.history
+            )
+        return eqx.tree_at(lambda state: state.history, new_state, history)
 
 
 class InnerStoppingRule(Protocol):
