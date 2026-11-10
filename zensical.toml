@@ -37,6 +37,9 @@ nav = [
     { "Advanced usage" = "guide/advanced-usage.md" },
     { "Inner solvers" = "guide/inner-solvers.md" },
   ] },
+  { "Examples" = [
+    { "Pendulum swing-up policy" = "examples/pendulum-policy.md" },
+  ] },
   { "Theory" = "theory.md" },
   { "API reference" = "api/index.md" },
 ]
