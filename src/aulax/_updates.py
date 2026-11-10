@@ -204,7 +204,11 @@ class AlgencanPenaltyUpdate(eqx.Module):
         previous_infeasibility: Constraints,
     ) -> tuple[Constraints, Bool[Array, ""]]:
         """Grow the penalty where the infeasibility did not decrease enough."""
-        dtype = jnp.result_type(*jax.tree.leaves(penalty))
+        leaves = jax.tree.leaves(penalty)
+        # A problem without constraints has no penalty to grow.
+        if not leaves:
+            return penalty, jnp.array(False)
+        dtype = jnp.result_type(*leaves)
         maximum = (
             dtype_default(dtype, 1e12, 1e6)
             if self.maximum_value is None

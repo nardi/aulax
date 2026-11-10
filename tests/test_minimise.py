@@ -290,3 +290,15 @@ def test_unbounded_threshold_restarts_diverging_inner_solve():
     assert restarted.result == alx.RESULTS.successful
     assert restarted.stats.infeasibility <= 1e-6
     assert np.all(np.isfinite(restarted.value))
+
+
+def test_problem_without_constraints():
+    """Check that a problem with neither equality nor inequality residuals solves."""
+
+    def quadratic(y, args, state):
+        return alx.Evaluation(objective=jnp.sum((y - 1.0) ** 2))
+
+    for inner in (alx.Newton(), optx.LBFGS(rtol=1e-8, atol=1e-8)):
+        solver = alx.AugmentedLagrangian(inner=inner)
+        solution = alx.minimise(quadratic, solver, jnp.zeros(3))
+        assert jnp.allclose(solution.value, 1.0, atol=1e-6)
