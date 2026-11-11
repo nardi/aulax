@@ -12,7 +12,7 @@ from ._types import BenchmarkProblem
 
 
 def rescaled(problem: BenchmarkProblem, spread: float = 2.0) -> BenchmarkProblem:
-    """Return `problem` in the variables `z = y / d`, with scaled outputs.
+    """Return `problem` in the variables `z = y / variable_factor`, with scaled outputs.
 
     Every factor is `10**u` with `u` uniform in `[-spread, spread]`. The generator
     is seeded with the name of `problem`, so the factors are the same on every run.
@@ -39,7 +39,7 @@ def rescaled(problem: BenchmarkProblem, spread: float = 2.0) -> BenchmarkProblem
             return None
         return jnp.concatenate([jnp.ravel(leaf) for leaf in leaves])
 
-    def function(scaled_point, args, state):
+    def scaled_problem(scaled_point, args, state):
         """Evaluate `problem` at the unscaled point and scale its outputs."""
         flat_scaled_point, _ = ravel_pytree(scaled_point)
         evaluation = problem.problem(
@@ -60,7 +60,7 @@ def rescaled(problem: BenchmarkProblem, spread: float = 2.0) -> BenchmarkProblem
         solution = np.asarray(solution_flat) / variable_factor
     return dataclasses.replace(
         problem,
-        problem=function,
+        problem=scaled_problem,
         y0=np.asarray(flat_y0) / variable_factor,
         solution=solution,
         objective=None

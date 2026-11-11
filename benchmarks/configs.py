@@ -154,15 +154,6 @@ class AulaxConfiguration:
 
         @jax.jit
         def solve(y0, args):
-            if bounds is None:
-                return alx.minimise(
-                    counted_problem,
-                    self.solver,
-                    y0,
-                    args,
-                    max_steps=self.max_steps,
-                    throw=False,
-                )
             return alx.minimise(
                 counted_problem,
                 self.solver,

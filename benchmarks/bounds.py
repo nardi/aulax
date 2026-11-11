@@ -2,7 +2,7 @@
 
 A residual is a bound when its gradient has one nonzero entry and does not change
 between two points. The detected bounds become an `alx.Bounds` box, and the
-reduced problem keeps only the other inequality residuals.
+reduced problem contains only the other inequality residuals.
 """
 
 import dataclasses
@@ -49,14 +49,14 @@ def split_bounds(
         np.random.default_rng(0).normal(size=flat_y0.size), flat_y0.dtype
     )
     jacobian_shifted = np.asarray(jax.jacfwd(inequality)(shifted_y))
-    keep = []
+    kept_rows = []
     for row in range(residual_y0.size):
         nonzero = np.flatnonzero(jacobian_y0[row])
         constant_row = np.allclose(
             jacobian_y0[row], jacobian_shifted[row], rtol=0, atol=1e-12
         )
         if len(nonzero) != 1 or not constant_row:
-            keep.append(row)
+            kept_rows.append(row)
             continue
         index = nonzero[0]
         coefficient = jacobian_y0[row, index]
@@ -67,9 +67,9 @@ def split_bounds(
             upper[index] = min(upper[index], value)
         else:
             lower[index] = max(lower[index], value)
-    keep = np.asarray(keep, dtype=int)
+    kept_rows = np.asarray(kept_rows, dtype=int)
 
-    def reduced(y, args, state):
+    def problem_without_bounds(y, args, state):
         """Return `problem` evaluated with only the kept inequality residuals."""
         evaluation = problem(y, args, state)
         leaves = jax.tree.leaves(evaluation.inequality)
@@ -77,10 +77,10 @@ def split_bounds(
             return evaluation
         residuals = jnp.concatenate([jnp.ravel(leaf) for leaf in leaves])
         return dataclasses.replace(
-            evaluation, inequality=residuals[keep] if keep.size else None
+            evaluation, inequality=residuals[kept_rows] if kept_rows.size else None
         )
 
-    return _box(unravel, lower, upper), reduced
+    return _box(unravel, lower, upper), problem_without_bounds
 
 
 def _box(

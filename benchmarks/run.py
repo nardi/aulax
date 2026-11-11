@@ -33,7 +33,7 @@ def cast_to_float32(tree: PyTree) -> PyTree:
     """
 
     def cast_leaf(leaf):
-        """Return `leaf` as `float32` if it holds floating point values."""
+        """Return `leaf` as `float32` if it has a floating point dtype."""
         if np.issubdtype(np.asarray(leaf).dtype, np.floating):
             return np.asarray(leaf, dtype=np.float32)
         return leaf
