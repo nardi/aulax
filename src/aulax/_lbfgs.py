@@ -276,7 +276,11 @@ class LBFGS(optx.AbstractMinimiser):
         def to_original(scaled: Array) -> Array:
             """Return the variables for a scaled point, inside the box."""
             flat = scaled if scale is None else scaled * scale
-            return flat if flat_bounds is None else jnp.clip(flat, *flat_bounds)
+            if flat_bounds is None:
+                return flat
+            # The clip is applied outside the gradient so that a variable exactly
+            # at a bound keeps the full derivative instead of half of it.
+            return flat + jax.lax.stop_gradient(jnp.clip(flat, *flat_bounds) - flat)
 
         scaled_box = (
             None

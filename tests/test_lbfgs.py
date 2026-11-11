@@ -112,6 +112,22 @@ def test_bounded_problem_ends_on_the_active_bounds():
     np.testing.assert_allclose(solution.value[2], 0.5, atol=1e-8)
 
 
+def test_gradient_at_a_variable_on_a_bound_is_not_halved():
+    target = jnp.array([4.0, -4.0])
+
+    def function(y, args):
+        return jnp.sum((y - target) ** 2), None
+
+    bounds = alx.Bounds(lower=-1.0, upper=2.0)
+    solution = solve_with_bounds(
+        function, alx.LBFGS(rtol=1e-12, atol=1e-12), jnp.zeros(2), bounds
+    )
+    np.testing.assert_array_equal(solution.value, [2.0, -1.0])
+    assert isinstance(solution.state, _LBFGSState)
+    # The gradient at the active bounds is 2 * (y - target), which is -4 and 6.
+    np.testing.assert_allclose(solution.state.f_info.grad, [-4.0, 6.0])
+
+
 def test_start_outside_the_box_and_iterates_stay_inside():
     target = jnp.array([4.0, -4.0])
     visited = []
