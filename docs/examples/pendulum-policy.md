@@ -1,8 +1,8 @@
 # Pendulum swing-up policy
 
-This example trains a small neural network to swing a pendulum up from many different starting states. The network is a policy, which maps the state of the pendulum to a torque. aulax is used in two ways. It computes the optimal trajectory from each starting state, which serves as training data. It also trains the network itself, with the network weights as the variables `y` and with a constraint for every starting state that the pendulum ends upright.
+This example trains a small neural network to swing a pendulum up from many different starting states. The network is a policy, which maps the state of the pendulum to a torque. aulax is used in two ways. It computes the optimal trajectory from each starting state, and these trajectories are the training data. It also trains the network itself, with the network weights as the variables `y` and with a constraint for every starting state that the pendulum ends upright.
 
-The second use is what this example is about. The objective averages the control effort over all starting states, and the constraints hold for each starting state separately. Each of those constraints has its own multiplier, and the multiplier update changes it in proportion to the final error from that starting state. The starting states that end furthest from upright therefore have the largest terms in the next augmented Lagrangian.
+In the second use, the objective averages the control effort over all starting states, and the constraints hold for each starting state separately. Each of those constraints has its own multiplier, and the multiplier update changes it in proportion to the final error from that starting state. The starting states that end furthest from upright therefore have the largest terms in the next augmented Lagrangian.
 
 ## Pendulum model
 
@@ -132,7 +132,7 @@ def policy_torque(network, theta, omega, time):
 
 ## Imitation of the optimal trajectories
 
-A network with random weights is far from swinging the pendulum up, and training it directly against the terminal constraints does not converge. We first fit it to the optimal trajectories by least squares, so that it predicts the optimal torque in the states along them. This problem has no constraints, and aulax solves it like any other.
+A network with random weights is far from swinging the pendulum up, and training it directly against the terminal constraints does not converge. We first fit it to the optimal trajectories by least squares, so that it predicts the optimal torque in the states along them. This problem has no constraints, and `alx.minimise` solves it in the same way as a constrained problem.
 
 <!-- name: test_pendulum_policy -->
 ```python
@@ -154,7 +154,7 @@ imitated = alx.minimise(
 )
 ```
 
-## Training through the simulation
+## Policy training through the simulation
 
 The imitated policy makes small errors in every step, and they add up along a trajectory. To correct that, we simulate the pendulum under the policy and differentiate through the simulation. The objective is the mean control effort over the training starting states. The equality constraints require every trajectory to end upright, with zero angular velocity. They have the shape `(32, 2)`, so there is a multiplier for every starting state and both final values.
 
@@ -201,7 +201,7 @@ trained = alx.minimise(
 
 The network has 369 weights, so a dense Hessian would be affordable, but every Hessian evaluation differentiates twice through 32 simulations. `alx.LBFGS` only needs gradients. The solver passes `inner_max_steps=4096`, which allows long inner solves, and `scaling=None`, which leaves the problem unscaled. The tolerance schedule and the penalty settings are the ones that `alx.AugmentedLagrangian` selects for `alx.LBFGS`, which are described in the [inner solvers](../guide/inner-solvers.md#l-bfgs) guide.
 
-A network can rarely end every trajectory exactly upright, so the training runs until `max_steps` and `throw=False` keeps the result. This is the usual way to end the training of a network, by a budget instead of a tolerance.
+A network can rarely end every trajectory exactly upright, so the training runs until `max_steps` and `throw=False` returns the result instead of raising an error. This is the usual way to end the training of a network, by a budget instead of a tolerance.
 
 ## Results on the test starting states
 

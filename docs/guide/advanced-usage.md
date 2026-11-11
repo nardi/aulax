@@ -70,7 +70,7 @@ assert jnp.allclose(solution.value, jnp.array([0.55, 0.45, 0.0]), atol=1e-3)
 
 ### Inner minimiser
 
-The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. `optx.BFGS` stores a dense Hessian approximation, which costs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `alx.LBFGS` keeps only the last 20 pairs of a step and a gradient difference and is usually the better choice. `alx.AugmentedLagrangian` selects the penalty, the tolerance schedule and the feasibility tolerance for it, so it needs no settings here:
+The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. `optx.BFGS` stores a dense Hessian approximation, which needs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `alx.LBFGS` stores only the last 20 pairs of a step and a gradient difference and is usually the better choice. For `alx.LBFGS`, `alx.AugmentedLagrangian` selects the penalty, the tolerance schedule and the feasibility tolerance, so no settings are needed here:
 
 <!-- name: test_advanced_usage -->
 ```python
@@ -122,7 +122,7 @@ gentle = alx.minimise(
 assert gentle.stats.num_steps < formula.stats.num_steps
 ```
 
-With `alx.LBFGS`, `penalty_update=None` already selects an initial penalty of 10 and a growth factor of 100. A `penalty_update` that is passed replaces both, so `AlgencanPenaltyUpdate(initial_value=1.0)` also brings back the growth factor of 10. On this problem, `alx.LBFGS` does not need a different initial penalty.
+With `alx.LBFGS`, `penalty_update=None` already selects an initial penalty of 10 and a growth factor of 100. A `penalty_update` that is passed replaces both, so `AlgencanPenaltyUpdate(initial_value=1.0)` also sets the growth factor to 10 again. On this problem, `alx.LBFGS` does not need a different initial penalty.
 
 When constraints have very different scales, `AlgencanPenaltyUpdate(per_constraint=True)` gives each constraint element its own penalty, so a hard constraint does not raise the penalty on all the others. Scaling the residuals in the problem function, so that a violation of 1 means roughly the same thing for every constraint, helps just as much and costs nothing.
 
@@ -155,7 +155,7 @@ Here the warm start takes about a fifth of the steps of the cold one. The penalt
 
 ### Implicit derivatives
 
-The solution of a problem depends on its `args`, and on any arrays the problem function closes over. `jax.grad`, `jax.jacrev` and `jax.jacfwd` all work on `alx.minimise`, and by default they use the implicit function theorem on the KKT conditions at the solution. This costs one linear solve, whatever the number of steps the solve itself took, and it never stores the iterations. The bounds of `alx.minimise` are part of the KKT conditions as well, and the [bounds](bounds.md#derivatives) page describes their derivatives.
+The solution of a problem depends on its `args`, and on any arrays the problem function closes over. `jax.grad`, `jax.jacrev` and `jax.jacfwd` all work on `alx.minimise`, and by default they use the implicit function theorem on the KKT conditions at the solution. This costs one linear solve, whatever the number of steps the solve itself took, and the solver does not store the iterations. The bounds of `alx.minimise` are part of the KKT conditions as well, and the [bounds](bounds.md#derivatives) page describes their derivatives.
 
 For the simplex projection, the Jacobian of the projection with respect to $p$ has a closed form. On the set $S$ of positive entries, the projection subtracts the mean excess, so its Jacobian there is $I - \frac{1}{\lvert S \rvert} \mathbf{1}\mathbf{1}^\top$, and it is zero elsewhere:
 

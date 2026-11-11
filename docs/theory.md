@@ -82,11 +82,11 @@ $$
 
 with the update $\mu \leftarrow \max(0, \mu + \rho \, g(y))$. This term is zero while $g_j \le -\mu_j / \rho$, and it grows quadratically beyond that point. So a constraint with a positive multiplier gets penalized a little before its boundary, which holds the minimizer right on it, and a constraint with $\mu_j = 0$ is left alone until it is violated. The method sorts out which constraints are active by itself.
 
-There is a numerical cost to the one-sided penalty. Its second derivative jumps from zero to $\rho$ at $g_j = -\mu_j / \rho$. Quasi-Newton minimisers like BFGS build their Hessian approximation from gradient differences, and they lose accuracy when many constraints cross that point during an inner solve. That is why problems with many bound constraints need more inner steps. Bounds that `Newton` or `LBFGS` handle directly do not have this cost.
+There is a numerical cost to the one-sided penalty. Its second derivative jumps from zero to $\rho$ at $g_j = -\mu_j / \rho$. Quasi-Newton minimisers like `optx.BFGS` build their Hessian approximation from gradient differences, and they lose accuracy when many constraints cross that point during an inner solve. That is why problems with many bound constraints need more inner steps. Bounds that `Newton` or `LBFGS` handle directly do not have this cost.
 
 ## Bounds on the variables
 
-A box $l \le y \le u$ on the variables can be part of the problem, next to $h$ and $g$. An inner minimiser that handles bounds, which are `Newton` and `LBFGS`, keeps the bounds out of the augmented Lagrangian. It minimizes $L_\rho$ over the box, and every iterate is inside the box, so the bounds add no penalty terms and no kinks of the kind described above. For any other minimiser, `alx.minimise` adds every finite bound as an inequality row $l - y \le 0$ or $y - u \le 0$, and the one-sided penalty applies to it.
+A box $l \le y \le u$ on the variables can be part of the problem, next to $h$ and $g$. `Newton` and `LBFGS` handle bounds, so the bounds are not included in the augmented Lagrangian. The inner minimiser minimises $L_\rho$ over the box and every iterate is inside the box, so the bounds add no penalty terms and no kinks of the kind described above. For any other minimiser, `alx.minimise` adds every finite bound as an inequality row $l - y \le 0$ or $y - u \le 0$, and the one-sided penalty applies to it.
 
 The KKT conditions with a box have a multiplier $\nu_l \ge 0$ for every lower bound and $\nu_u \ge 0$ for every upper bound:
 
@@ -94,7 +94,7 @@ $$
 \nabla f + \nabla h^\top \lambda + \nabla g^\top \mu - \nu_l + \nu_u = 0, \quad \nu_l (l - y) = 0, \quad \nu_u (y - u) = 0.
 $$
 
-These multipliers are the reduced costs. A reduced cost is zero for a variable that is not at a bound. At a bound it is the part of the gradient of the Lagrangian that the bound balances, where the Lagrangian has $f$, $h$ and $g$ but not the bounds. The gradient of that Lagrangian is therefore $\nu_l - \nu_u$ at a solution, and it does not have to be zero. Stationarity is measured by the projected gradient, which only keeps the elements of the gradient that point into the box, and that is zero at a solution. The [bounds](guide/bounds.md) guide shows how to pass a box to `alx.minimise`.
+These multipliers are the reduced costs. A reduced cost is zero for a variable that is not at a bound. At a bound it is the part of the gradient of the Lagrangian that is cancelled by the multiplier of the bound, where the Lagrangian has $f$, $h$ and $g$ but not the bounds. The gradient of that Lagrangian is therefore $\nu_l - \nu_u$ at a solution, and it does not have to be zero. Stationarity is measured by the projected gradient. It leaves out every element of the gradient at a bound whose negative would point out of the box, and it is zero at a solution. The [bounds](guide/bounds.md) guide shows how to pass a box to `alx.minimise`.
 
 ## The practical method
 
@@ -102,7 +102,7 @@ The algorithm above leaves open how large $\rho$ should be and how accurately to
 
 ## The solver loop
 
-aulax minimizes each $L_\rho$ with an inner minimiser, which is `Newton` by default, or `LBFGS`, or any optimistix minimiser. It calls the minimiser one step at a time inside a single `jax.lax.while_loop`. When the inner minimiser reports that it has converged, the next loop iteration updates the multipliers and the penalty, and restarts the inner minimiser at the same point. An optimistix minimiser returns the evaluation of the point it started its step from, so its update comes one iteration late. To get $h$ and $g$ at the inner solution, the loop takes one more step from there, uses the evaluation that comes back, and discards the step itself. `Newton` and `LBFGS` keep the evaluation at their accepted point, so they update in the iteration where the inner solve ends.
+aulax minimises each $L_\rho$ with an inner minimiser, which is `Newton` by default, or `LBFGS`, or any optimistix minimiser. `alx.minimise` calls the minimiser one step at a time inside a single `jax.lax.while_loop`. When the inner minimiser reports that it has converged, the next loop iteration updates the multipliers and the penalty, and restarts the inner minimiser at the same point. An optimistix minimiser returns the evaluation of the point it started its step from, so the multiplier and penalty update happens one iteration later. To get $h$ and $g$ at the inner solution, the loop takes one more step from there. It uses the evaluation that this step returns and discards the step itself. The states of `Newton` and `LBFGS` contain the evaluation at the accepted point, so the update happens in the iteration where the inner solve ends.
 
 A single loop matters under `jax.vmap`. With an outer loop around complete inner solves, every problem in a batch would wait for the slowest inner solve before any of them could update its multipliers. In a single loop, each problem moves on by itself.
 
@@ -122,10 +122,10 @@ which is small when the constraints hold and inactive constraints have small mul
 
 - `growth_factor` is $\gamma$, by default 10, and 100 when the inner minimiser is `LBFGS`. A larger value reaches a sufficient penalty in fewer outer iterations, but it can overshoot and make the inner problems harder than they need to be.
 - `decrease_factor` is $\tau$, by default 0.5. It sets how much progress counts as enough. A smaller value asks for faster progress, so the penalty grows more often.
-- `initial_value` is the penalty for the first inner solve. By default it comes from the formula of Birgin and Martínez, $\rho_0 = 10 \max(1, \lvert f \rvert) / \max(1, \frac{1}{2} \lVert h \rVert^2 + \frac{1}{2} \lVert \max(0, g) \rVert^2)$ at `y0`, clipped to $[10^{-8}, 10^{8}]$. This balances the objective against the initial violation. When `y0` is nearly feasible and the objective is large, the formula can start higher than needed, and a fixed value like 1 can be faster. For `LBFGS`, the default is a fixed initial penalty of 10.
+- `initial_value` is the penalty for the first inner solve. By default it comes from the formula of Birgin and Martínez, $\rho_0 = 10 \max(1, \lvert f \rvert) / \max(1, \frac{1}{2} \lVert h \rVert^2 + \frac{1}{2} \lVert \max(0, g) \rVert^2)$ at `y0`, clipped to $[10^{-8}, 10^{8}]$. This makes the objective and the initial violation about equally large in the augmented Lagrangian. When `y0` is nearly feasible and the objective is large, the formula can start higher than needed, and a fixed value like 1 can be faster. For `LBFGS`, the default is a fixed initial penalty of 10.
 - `maximum_value` caps the penalty, by default at $10^{12}$ in float64 and $10^{6}$ in float32. When the penalty is at its cap and the infeasibility stops decreasing, the solve ends with `RESULTS.infeasible`. A lower cap detects infeasible problems sooner, and a higher one gives badly scaled problems more room.
 - `per_constraint=True` gives every constraint element its own penalty, which grows based on that element alone. This helps when constraints have very different scales, since one hard constraint no longer drives up the penalty on all the others.
-- `penalty_freeze_factor` stops the penalty from growing once the infeasibility is within this multiple of `feasibility_tolerance`. The multipliers keep updating while the penalty stays fixed, and they converge without it. The default is 10 for `Newton` and 0.1 for other minimisers, including `LBFGS`. On the Hock-Schittkowski problems, the factor of 10 removed the one failure that the tighter feasibility tolerance caused.
+- `penalty_freeze_factor` stops the penalty from growing once the infeasibility is within this multiple of `feasibility_tolerance`. The multipliers are still updated while the penalty is fixed, and they converge without further penalty growth. The default is 10 for `Newton` and 0.1 for other minimisers, including `LBFGS`. On the Hock-Schittkowski problems, the factor of 10 fixed the one failure that the tighter feasibility tolerance caused.
 
 ### Multipliers
 
@@ -137,13 +137,13 @@ The multipliers in `Solution.multipliers` are the estimates before clipping.
 
 ### Inner tolerance
 
-`GeometricToleranceSchedule` sets the `rtol` and `atol` of each inner solve. The first inner solve uses `initial`, by default $10^{-2}$ and $10^{-8}$ for `LBFGS`, and each following one multiplies it by `factor`, by default 0.1, until it reaches the `rtol` and `atol` of the inner minimiser. A larger `initial` or smaller `factor` saves inner steps early on, but it gives the penalty rule noisier measurements to judge progress by.
+`GeometricToleranceSchedule` sets the `rtol` and `atol` of each inner solve. The first inner solve uses `initial`, by default $10^{-2}$ and $10^{-8}$ for `LBFGS`, and each following inner solve uses the previous value times `factor`, by default 0.1, until it reaches the `rtol` and `atol` of the inner minimiser. A larger `initial` or smaller `factor` saves inner steps early on, but the penalty update then compares the infeasibility of less converged inner solutions.
 
 ### Termination
 
 The solve stops when the inner tolerance has reached its final value, and the largest of $\lVert h \rVert_\infty$ and $\lVert \min(-g, \mu) \rVert_\infty$ is below `feasibility_tolerance`. The second term is small when every inequality holds and every inactive constraint has a zero multiplier.
 
-- `feasibility_tolerance` is $10^{-8}$ in float64 and $10^{-5}$ in float32 for `Newton` and `LBFGS`, and $10^{-6}$ in float64 and $10^{-3}$ in float32 for other minimisers, by default. The violation at the end of a solve is about the final inner tolerance, so a bound far below that cannot be reached. `Newton` converges quadratically near the solution, so its final tolerance of $10^{-8}$ is at the same level as the bound. `LBFGS` also uses the tight tolerance, together with the tolerance schedule and the penalty settings listed above. The optimistix quasi-Newton minimisers keep the looser default.
+- `feasibility_tolerance` is $10^{-8}$ in float64 and $10^{-5}$ in float32 for `Newton` and `LBFGS`, and $10^{-6}$ in float64 and $10^{-3}$ in float32 for other minimisers, by default. The violation at the end of a solve is about the final inner tolerance, so a tolerance far below that value cannot be reached. `Newton` converges quadratically near the solution, so its final tolerance of $10^{-8}$ is about equal to that value. `LBFGS` also has the tight tolerance, and its tolerance schedule and penalty settings are the ones listed above. The optimistix quasi-Newton minimisers have the looser default.
 - `inner_max_steps` ends an inner solve after that many steps, by default 256. The multipliers are then updated from wherever the inner minimiser got to, which is often good enough to make progress.
 
 ## Comparison with IPOPT and NLopt
@@ -170,7 +170,7 @@ $$
 K = \begin{bmatrix} H & \nabla h^\top & \nabla g_{\mathcal{A}}^\top & 0 \\ \nabla h & 0 & 0 & 0 \\ \nabla g_{\mathcal{A}} & 0 & 0 & 0 \\ 0 & 0 & 0 & -I \end{bmatrix},
 $$
 
-where $H$ is the Hessian of the Lagrangian, and the last block row sets the derivatives of the inactive multipliers to zero. A constraint with $g_j = 0$ and $\mu_j = 0$ at the solution counts as inactive. The derivative is not unique at such a point, and this picks one of the valid ones. A bound that the inner minimiser handles counts as active when its reduced cost is positive, and then it is treated like an active inequality constraint $l - y \le 0$ or $y - u \le 0$ with the reduced cost as its multiplier.
+where $H$ is the Hessian of the Lagrangian, and the last block row sets the derivatives of the inactive multipliers to zero. A constraint with $g_j = 0$ and $\mu_j = 0$ at the solution counts as inactive. The derivative is not unique at such a point, and this rule selects one of the valid derivatives. A bound that the inner minimiser handles counts as active when its reduced cost is positive, and then it is treated like an active inequality constraint $l - y \le 0$ or $y - u \le 0$ with the reduced cost as its multiplier.
 
 ## References
 

@@ -51,7 +51,7 @@ Several JAX libraries cover part of this, and each made different choices than a
 
 aulax is also built around one function that returns everything at once. The objective and the constraints of a real model usually share most of their work, like a simulation whose output feeds both. With one function, that work runs once per point. The function can also pass a warm start to its next evaluation through its `state`, which matters when the model contains an iterative solve of its own.
 
-The augmented Lagrangian method has its costs. It needs more function evaluations than SQP or an interior point method on small problems, and it slows down on problems with many bound constraints, because bounds that are inequality constraints go through the penalty. `Newton` and `LBFGS` handle bounds that are passed as `bounds` themselves, as the [bounds](guide/bounds.md) page describes. The [advanced usage](guide/advanced-usage.md) page shows where this bites.
+The augmented Lagrangian method has its costs. It needs more function evaluations than SQP or an interior point method on small problems, and it slows down on problems with many bound constraints, because bounds that are inequality constraints add penalty terms. `Newton` and `LBFGS` take bounds that are passed as `bounds` directly, without adding them to the penalty, as the [bounds](guide/bounds.md) page describes. The [advanced usage](guide/advanced-usage.md) page shows an example with measured step counts.
 
 ## Status
 
