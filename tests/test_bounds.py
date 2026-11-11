@@ -57,9 +57,9 @@ class _ProjectedState(eqx.Module):
 class ProjectedGradient(optx.AbstractMinimiser):
     """Gradient descent with projection onto the box and a backtracking line search.
 
-    It is a minimal minimiser with native bounds, which tests the path of
-    `alx.minimise` that hands the bounds to the inner minimiser. Every point that it
-    evaluates is inside the box.
+    It is a minimal minimiser with `supports_bounds` set, which tests `alx.minimise`
+    when it passes the bounds in `options["bounds"]` to the inner minimiser. Every
+    point that it evaluates is inside the box.
     """
 
     supports_bounds: ClassVar[bool] = True
@@ -69,6 +69,7 @@ class ProjectedGradient(optx.AbstractMinimiser):
     norm: Callable[[PyTree], Scalar] = optx.max_norm
 
     def init(self, fn, y, args, options, f_struct, aux_struct, tags):
+        """Return the state with the value and gradient at `y`."""
         (value, aux), gradient = jax.value_and_grad(fn, has_aux=True)(y, args)
         return _ProjectedState(
             f_info=_ProjectedInfo(f=value, grad=gradient),
@@ -78,6 +79,7 @@ class ProjectedGradient(optx.AbstractMinimiser):
         )
 
     def step(self, fn, y, args, options, state, tags):
+        """Return the projected gradient step with a backtracking line search."""
         # Without bounds, the box is all of the space.
         bounds = options.get("bounds", alx.Bounds()).expand(y)
         maximum_step = options.get("maximum_step", 1e6)
@@ -98,8 +100,8 @@ class ProjectedGradient(optx.AbstractMinimiser):
                 fn, has_aux=True
             )(candidate, args)
             predicted = sum(
-                jnp.sum(slope * (new - old))
-                for slope, new, old in zip(
+                jnp.sum(slope * (new_leaf - old_leaf))
+                for slope, new_leaf, old_leaf in zip(
                     jax.tree.leaves(gradient),
                     jax.tree.leaves(candidate),
                     jax.tree.leaves(y),
@@ -117,28 +119,34 @@ class ProjectedGradient(optx.AbstractMinimiser):
                 accepted,
             )
 
-        def shrink(carry):
+        def halve_step_size(carry):
             step_size, count, *_ = carry
             return (step_size / 2, count + 1, *trial(step_size / 2))
 
-        def keep_shrinking(carry):
+        def line_search_continues(carry):
             _, count, *_, accepted = carry
             return jnp.invert(accepted) & (count < 40)
 
         first_step_size = jnp.minimum(2 * state.step_size, maximum_step)
         carry = (first_step_size, jnp.array(0), *trial(first_step_size))
         step_size, _, candidate, candidate_value, candidate_gradient, aux, accepted = (
-            jax.lax.while_loop(keep_shrinking, shrink, carry)
+            jax.lax.while_loop(line_search_continues, halve_step_size, carry)
         )
         new_y = jax.tree.map(
-            lambda new, old: jnp.where(accepted, new, old), candidate, y
+            lambda new_leaf, old_leaf: jnp.where(accepted, new_leaf, old_leaf),
+            candidate,
+            y,
         )
         new_value = jnp.where(accepted, candidate_value, value)
         new_gradient = jax.tree.map(
-            lambda new, old: jnp.where(accepted, new, old), candidate_gradient, gradient
+            lambda new_leaf, old_leaf: jnp.where(accepted, new_leaf, old_leaf),
+            candidate_gradient,
+            gradient,
         )
         new_aux = jax.tree.map(
-            lambda new, old: jnp.where(accepted, new, old), aux, state.aux
+            lambda new_leaf, old_leaf: jnp.where(accepted, new_leaf, old_leaf),
+            aux,
+            state.aux,
         )
         free_gradient = bounds.projected_gradient(new_y, new_gradient)
         converged = tree_max_norm(free_gradient) <= self.atol
@@ -151,9 +159,11 @@ class ProjectedGradient(optx.AbstractMinimiser):
         return new_y, new_state, state.aux
 
     def terminate(self, fn, y, args, options, state, tags):
+        """Return the termination flag of `state` and a successful result."""
         return state.terminate, optx.RESULTS.successful
 
     def postprocess(self, fn, y, aux, args, options, state, tags, result):
+        """Return `y` and `aux` unchanged, with no extra statistics."""
         return y, aux, {}
 
 
@@ -203,7 +213,7 @@ SOLVERS = [
 in `options`, and `optimistix.LBFGS` receives them as inequality rows."""
 
 
-def minimise(*args, **kwargs):
+def minimise_with_step_limit(*args, **kwargs):
     """Call `alx.minimise` with a step limit that the first-order minimiser needs."""
     kwargs.setdefault("max_steps", 50_000)
     return alx.minimise(*args, **kwargs)
@@ -222,7 +232,7 @@ QUADRATIC_BOUNDS = alx.Bounds(
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_active_and_inactive_bounds(solver):
-    solution = minimise(
+    solution = minimise_with_step_limit(
         quadratic,
         solver,
         jnp.zeros(4),
@@ -231,8 +241,8 @@ def test_active_and_inactive_bounds(solver):
     )
     np.testing.assert_allclose(solution.value, [0.0, 0.5, 2.0, 2.0], atol=1e-6)
     assert solution.bound_multipliers is not None
-    # The gradient is 2 (y - target), which the first lower bound and the third
-    # upper bound balance.
+    # The gradient is 2 (y - target), which is the multiplier of the first lower
+    # bound and of the third upper bound.
     np.testing.assert_allclose(
         solution.bound_multipliers.lower, [2.0, 0.0, 0.0, 0.0], atol=1e-5
     )
@@ -247,16 +257,18 @@ def test_active_and_inactive_bounds(solver):
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_no_bounds_gives_no_bound_multipliers(solver):
     target = QUADRATIC_TARGET
-    solution = minimise(quadratic, solver, jnp.zeros(4), target)
+    solution = minimise_with_step_limit(quadratic, solver, jnp.zeros(4), target)
     assert solution.bound_multipliers is None
-    empty = minimise(quadratic, solver, jnp.zeros(4), target, bounds=alx.Bounds())
+    empty = minimise_with_step_limit(
+        quadratic, solver, jnp.zeros(4), target, bounds=alx.Bounds()
+    )
     assert empty.bound_multipliers is None
     np.testing.assert_allclose(empty.value, target, atol=1e-6)
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_scalar_and_one_sided_bounds(solver):
-    solution = minimise(
+    solution = minimise_with_step_limit(
         quadratic,
         solver,
         jnp.ones(4),
@@ -274,7 +286,7 @@ def test_scalar_and_one_sided_bounds(solver):
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_start_point_outside_the_box_is_moved_inside(solver):
-    solution = minimise(
+    solution = minimise_with_step_limit(
         quadratic,
         solver,
         jnp.array([50.0, -50.0, 50.0, -50.0]),
@@ -287,16 +299,20 @@ def test_start_point_outside_the_box_is_moved_inside(solver):
 def test_lower_above_upper_is_rejected():
     bounds = alx.Bounds(lower=jnp.array([0.0, 1.0]), upper=jnp.array([1.0, 0.5]))
     with pytest.raises(ValueError, match="lower bound must be at most"):
-        minimise(quadratic, OPTIMISTIX_LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds)
+        minimise_with_step_limit(
+            quadratic, OPTIMISTIX_LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds
+        )
     with pytest.raises(ValueError, match="lower bound must be at most"):
-        minimise(quadratic, PROJECTED, jnp.zeros(2), jnp.ones(2), bounds=bounds)
+        minimise_with_step_limit(
+            quadratic, PROJECTED, jnp.zeros(2), jnp.ones(2), bounds=bounds
+        )
 
 
 def test_lower_above_upper_is_rejected_under_jit():
     @jax.jit
     def solve(lower):
         bounds = alx.Bounds(lower=lower, upper=jnp.zeros(2))
-        return minimise(
+        return minimise_with_step_limit(
             quadratic, OPTIMISTIX_LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds
         )
 
@@ -308,7 +324,9 @@ def test_lower_above_upper_is_rejected_under_jit():
 def test_concrete_bounds_closed_over_by_a_jitted_function(solver):
     @jax.jit
     def solve(y0, args):
-        return minimise(quadratic, solver, y0, args, bounds=QUADRATIC_BOUNDS)
+        return minimise_with_step_limit(
+            quadratic, solver, y0, args, bounds=QUADRATIC_BOUNDS
+        )
 
     solution = solve(jnp.zeros(4), QUADRATIC_TARGET)
     np.testing.assert_allclose(solution.value, [0.0, 0.5, 2.0, 2.0], atol=1e-6)
@@ -319,7 +337,9 @@ def test_lower_above_upper_is_rejected_for_concrete_bounds_under_jit():
 
     @jax.jit
     def solve(y0, args):
-        return minimise(quadratic, OPTIMISTIX_LBFGS, y0, args, bounds=bounds)
+        return minimise_with_step_limit(
+            quadratic, OPTIMISTIX_LBFGS, y0, args, bounds=bounds
+        )
 
     with pytest.raises(ValueError, match="lower bound must be at most"):
         solve(jnp.zeros(2), jnp.ones(2))
@@ -327,7 +347,7 @@ def test_lower_above_upper_is_rejected_for_concrete_bounds_under_jit():
 
 def test_options_must_not_contain_bounds():
     with pytest.raises(ValueError, match="`bounds`"):
-        minimise(
+        minimise_with_step_limit(
             quadratic,
             PROJECTED,
             jnp.zeros(2),
@@ -339,11 +359,13 @@ def test_options_must_not_contain_bounds():
 
 def test_options_are_merged_with_the_bounds_of_a_native_minimiser():
     bounds = alx.Bounds(lower=0.0)
-    solved = minimise(quadratic, PROJECTED, jnp.ones(2), jnp.ones(2), bounds=bounds)
+    solved = minimise_with_step_limit(
+        quadratic, PROJECTED, jnp.ones(2), jnp.ones(2), bounds=bounds
+    )
     assert solved.result == alx.RESULTS.successful
     # A maximum step of zero stops the minimiser from moving, which shows that it
     # receives `options` and the bounds together.
-    stuck = minimise(
+    stuck = minimise_with_step_limit(
         quadratic,
         PROJECTED,
         jnp.zeros(2),
@@ -361,7 +383,7 @@ def test_native_minimiser_only_evaluates_inside_the_box():
         objective = jnp.sum((y - 2.0) ** 2)
         return alx.Evaluation(objective=jnp.where(inside, objective, jnp.nan))
 
-    solution = minimise(
+    solution = minimise_with_step_limit(
         undefined_outside,
         PROJECTED,
         jnp.full(3, 0.5),
@@ -402,8 +424,10 @@ def constrained_with_rows(y, parameter, state):
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_bounds_with_equality_and_inequality_constraints(solver):
-    reference = minimise(constrained_with_rows, UNBOUNDED_NEWTON, jnp.zeros(3), 0.1)
-    solution = minimise(
+    reference = minimise_with_step_limit(
+        constrained_with_rows, UNBOUNDED_NEWTON, jnp.zeros(3), 0.1
+    )
+    solution = minimise_with_step_limit(
         constrained,
         solver,
         jnp.zeros(3),
@@ -434,7 +458,9 @@ def test_bounds_with_equality_and_inequality_constraints(solver):
     # The multipliers of the user's constraints have the structure of the
     # constraints, with no entries for the bounds.
     assert jax.tree.structure(solution.multipliers) == jax.tree.structure(
-        minimise(constrained, UNBOUNDED_NEWTON, jnp.zeros(3), 0.1).multipliers
+        minimise_with_step_limit(
+            constrained, UNBOUNDED_NEWTON, jnp.zeros(3), 0.1
+        ).multipliers
     )
     assert solution.stats.infeasibility < 1e-5
     assert solution.stats.stationarity < 1e-4
@@ -442,8 +468,10 @@ def test_bounds_with_equality_and_inequality_constraints(solver):
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_warm_start_with_multipliers(solver):
-    first = minimise(constrained, solver, jnp.zeros(3), 0.1, bounds=CONSTRAINED_BOUNDS)
-    second = minimise(
+    first = minimise_with_step_limit(
+        constrained, solver, jnp.zeros(3), 0.1, bounds=CONSTRAINED_BOUNDS
+    )
+    second = minimise_with_step_limit(
         constrained,
         solver,
         first.value,
@@ -469,8 +497,8 @@ def test_pytree_variables_and_bounds(solver):
         upper={"pair": 2.0, "single": jnp.inf},
     )
     y0 = {"pair": jnp.zeros(2), "single": jnp.array(0.0)}
-    solution = minimise(problem, solver, y0, target, bounds=bounds)
-    reference = minimise(
+    solution = minimise_with_step_limit(problem, solver, y0, target, bounds=bounds)
+    reference = minimise_with_step_limit(
         lambda y, args, state: alx.Evaluation(
             objective=problem(y, args, state).objective,
             equality=problem(y, args, state).equality,
@@ -512,7 +540,7 @@ def test_float32_solve(solver):
         lower=jnp.array([0.0, -1.0, -jnp.inf, 0.0], jnp.float32),
         upper=jnp.array([jnp.inf, 1.0, 2.0, 2.5], jnp.float32),
     )
-    solution = minimise(
+    solution = minimise_with_step_limit(
         quadratic,
         solver,
         jnp.zeros(4, jnp.float32),
@@ -533,7 +561,7 @@ def test_float32_solve(solver):
 
 @pytest.mark.parametrize("solver", FLOAT32_SOLVERS)
 def test_float32_solve_with_constraints_and_python_bounds(solver):
-    solution = minimise(
+    solution = minimise_with_step_limit(
         constrained,
         solver,
         jnp.zeros(3, jnp.float32),
@@ -550,7 +578,7 @@ def test_float32_solve_with_constraints_and_python_bounds(solver):
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_jit_and_vmap_with_batched_start_and_bounds(solver):
     def solve(y0, lower, upper):
-        solution = minimise(
+        solution = minimise_with_step_limit(
             quadratic,
             solver,
             y0,
@@ -586,7 +614,7 @@ def parametrised(y, parameters, state):
 
 
 def solve_parametrised(solver, parameters, bounds):
-    solution = minimise(
+    solution = minimise_with_step_limit(
         parametrised,
         solver,
         jnp.full(3, 0.3),
@@ -691,7 +719,7 @@ def test_projected_gradient_and_reduced_costs():
 
 
 def test_stationarity_is_measured_with_the_projected_gradient():
-    solution = minimise(
+    solution = minimise_with_step_limit(
         quadratic,
         PROJECTED,
         jnp.zeros(4),
@@ -702,7 +730,7 @@ def test_stationarity_is_measured_with_the_projected_gradient():
         solution.value
     )
     # The plain gradient is large at the active bounds, and the statistic ignores
-    # the part that the bounds balance.
+    # the elements at which the negative gradient points out of the box.
     assert jnp.max(jnp.abs(gradient)) > 1.0
     assert solution.stats.stationarity < 1e-6
 
@@ -714,7 +742,7 @@ def test_gradient_stopping_uses_the_projected_gradient():
         stationarity_tolerance=1e-6,
         inner_max_steps=2000,
     )
-    solution = minimise(
+    solution = minimise_with_step_limit(
         quadratic,
         solver,
         jnp.zeros(4),
@@ -731,7 +759,7 @@ def test_gradient_stopping_uses_the_projected_gradient():
 def test_equal_lower_and_upper_bound_fixes_the_variable():
     bounds = alx.Bounds(lower=jnp.array([0.0, 1.0]), upper=jnp.array([5.0, 1.0]))
     for solver in (PROJECTED, OPTIMISTIX_LBFGS):
-        solution = minimise(
+        solution = minimise_with_step_limit(
             quadratic, solver, jnp.zeros(2), jnp.array([2.0, 3.0]), bounds=bounds
         )
         np.testing.assert_allclose(solution.value, [2.0, 1.0], atol=1e-6)

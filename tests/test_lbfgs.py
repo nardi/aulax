@@ -94,8 +94,8 @@ def test_state_has_gradient_and_aux_at_the_accepted_point():
 
 
 def test_bounded_problem_ends_on_the_active_bounds():
-    # The unconstrained minimiser is (2, -3, 0.5), and the box cuts off two of the
-    # coordinates.
+    # The unconstrained minimiser is (2, -3, 0.5), and it is outside the box in two
+    # of the coordinates.
     target = jnp.array([2.0, -3.0, 0.5])
 
     def function(y, args):
@@ -108,7 +108,8 @@ def test_bounded_problem_ends_on_the_active_bounds():
     assert solution.result == optx.RESULTS.successful
     assert solution.value[0] == 1.0
     assert solution.value[1] == -1.0
-    # The free coordinate solves its own equation, with the other two fixed.
+    # The free coordinate satisfies its own stationarity equation, with the other
+    # two fixed.
     np.testing.assert_allclose(solution.value[2], 0.5, atol=1e-8)
 
 
@@ -358,7 +359,7 @@ def test_transfer_state_copies_the_history_as_the_reuse_option_says(
         np.testing.assert_array_equal(
             transferred.history.steps, old_state.history.steps
         )
-    # The rest of the state is the one of the fresh solve.
+    # All other fields of the state are equal to those of a fresh solve.
     assert bool(transferred.first_step)
 
 

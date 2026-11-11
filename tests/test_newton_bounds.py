@@ -101,7 +101,8 @@ def test_rosenbrock_in_a_box_with_two_active_bounds(hessian):
         solution.value - gradient, expanded.lower, expanded.upper
     )
     assert float(jnp.max(jnp.abs(stationarity))) < 1e-6
-    # The second bound is active, and the gradient pushes against it.
+    # The second bound is active, and the negative gradient points out of the box
+    # there.
     np.testing.assert_allclose(solution.value[1], 0.2, atol=1e-12)
     assert float(gradient[1]) < 0.0
 
@@ -155,8 +156,8 @@ def test_the_iterates_stay_inside_the_box_and_the_gradient_is_not_projected():
 
 
 def test_a_fixed_variable_does_not_stall_the_stopping_test():
-    # The first variable is held at its bound with a gradient that stays large, so
-    # the solve must stop on the change of the free variable.
+    # The first variable is at its bound and its gradient is large at every
+    # iterate, so the solve must stop on the change of the free variable.
     def fn(y, args):
         return 100.0 * y[0] + 0.5 * jnp.sum((y[1:] - 2.0) ** 2), None
 
@@ -170,9 +171,10 @@ def test_a_fixed_variable_does_not_stall_the_stopping_test():
 def test_a_fixed_variable_stays_exactly_at_its_bound(seed):
     # The variables have scales that differ by four orders of magnitude, so the
     # linear solve for the free variables has rounding errors. The third variable
-    # is at its lower bound with a gradient that points out of the box. Its step
-    # must be exactly zero and not rounding noise, or the variable would leave the
-    # bound and the projected gradient would count it as a free variable.
+    # is at its lower bound and the negative gradient points out of the box there.
+    # Its step must be exactly zero and not rounding noise, or the variable would
+    # move off the bound and the projected gradient would count it as a free
+    # variable.
     scale = 10.0 ** jnp.array([2.0, -2.0, 1.0, -1.0])
     factor = jax.random.normal(jax.random.key(seed), (4, 4))
     hessian = (factor @ factor.T + jnp.eye(4)) * jnp.outer(scale, scale)
@@ -306,7 +308,7 @@ def test_restricted_step_matches_the_reduced_problem(mode):
     key = jax.random.key(0)
     factor = jax.random.normal(key, (size, size))
     matrix = factor @ factor.T + size * jnp.eye(size)
-    # A banded matrix keeps the sparse pattern small.
+    # A banded matrix has few nonzero entries, so the sparse pattern is small.
     matrix = jnp.where(
         jnp.abs(jnp.arange(size)[:, None] - jnp.arange(size)) <= 2, matrix, 0.0
     )
@@ -330,14 +332,14 @@ def test_restricted_step_matches_the_reduced_problem(mode):
     step = prepared.step(scalar, data, gradient, jnp.asarray(1e3), free)
     indices = np.flatnonzero(np.asarray(free))
     reduced = -jnp.linalg.solve(matrix[np.ix_(indices, indices)], gradient[indices])
-    # Conjugate gradients stop at a loose tolerance, so that step is only close.
+    # Conjugate gradients stop at a loose tolerance, so the step only approximates
+    # the reduced solution.
     tolerance = 0.2 if mode == "matrix_free" else 1e-5
     np.testing.assert_allclose(step[indices], reduced, rtol=tolerance, atol=1e-8)
     np.testing.assert_array_equal(step[np.flatnonzero(~np.asarray(free))], 0.0)
 
 
 def test_without_bounds_in_the_options_the_unbounded_method_runs():
-    # Without bounds in the options, the minimiser runs the unbounded method.
     solution = solve(
         rosenbrock, alx.Newton(rtol=1e-10, atol=1e-10), jnp.array([-1.2, 1.0]), None
     )
