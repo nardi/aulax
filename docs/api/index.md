@@ -14,6 +14,8 @@
 
 ::: aulax.Constraints
 
+::: aulax.Bounds
+
 ## Solutions
 
 ::: aulax.Solution
@@ -41,6 +43,8 @@
 ## Inner solves
 
 ::: aulax.Newton
+
+::: aulax.LBFGS
 
 ::: aulax.HessianStrategy
 
