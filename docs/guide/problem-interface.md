@@ -16,7 +16,7 @@ An `Evaluation` has five fields:
 
 Only `objective` is required. A problem without equality constraints leaves `equality` at `None`, and the same goes for the other fields.
 
-The inequality convention is $g(y) \le 0$. A constraint of the form $a(y) \ge b$ becomes `b - a(y)`, and bounds on the variables are ordinary inequality constraints. A box $l \le y \le u$ becomes two residuals:
+The inequality convention is $g(y) \le 0$. A constraint of the form $a(y) \ge b$ becomes `b - a(y)`, and a box $l \le y \le u$ on the variables can be written as two residuals, as below. The [bounds](bounds.md) page describes `alx.Bounds`, which `alx.Newton` and `alx.LBFGS` handle without adding the box to the augmented Lagrangian.
 
 <!-- name: test_bounds -->
 ```python
