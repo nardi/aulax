@@ -163,12 +163,14 @@ PROJECTED = alx.AugmentedLagrangian(
     stationarity_tolerance=1e-5,
     inner_max_steps=2000,
 )
-LBFGS = alx.AugmentedLagrangian(inner=optx.LBFGS(rtol=1e-10, atol=1e-10))
+"""A solver whose inner minimiser receives the bounds in `options["bounds"]`."""
+OPTIMISTIX_LBFGS = alx.AugmentedLagrangian(inner=optx.LBFGS(rtol=1e-10, atol=1e-10))
+"""A solver whose inner minimiser ignores `options`, so the bounds become rows."""
 NEWTON = alx.AugmentedLagrangian(inner=alx.Newton())
+"""A solver whose inner minimiser `alx.Newton` receives the bounds in `options`."""
 UNBOUNDED_NEWTON = alx.AugmentedLagrangian(inner=alx.Newton(rtol=1e-12, atol=1e-12))
+"""A solver with tight tolerances, for problems that have the bounds as rows."""
 
-# The solvers for float32 have looser tolerances, and `optimistix.LBFGS` does not
-# run in float32 when 64-bit mode is on.
 FLOAT32_SOLVERS = [
     pytest.param(
         alx.AugmentedLagrangian(
@@ -177,21 +179,28 @@ FLOAT32_SOLVERS = [
             stationarity_tolerance=1e-4,
             inner_max_steps=2000,
         ),
-        id="native",
+        id="projected_gradient",
     ),
     pytest.param(
-        alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-6, atol=1e-6)), id="bfgs"
+        alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-6, atol=1e-6)),
+        id="optimistix_bfgs",
     ),
     pytest.param(NEWTON, id="newton"),
 ]
+"""Solvers for float32 runs, which have looser tolerances.
 
-# The first solver passes the bounds to the minimiser, and the other two receive
-# them as inequality constraints.
+`optimistix.LBFGS` does not run in float32 when 64-bit mode is on, so `optimistix.BFGS`
+takes its place. The bounds are in `options` for `ProjectedGradient` and `alx.Newton`,
+and are inequality rows for `optimistix.BFGS`.
+"""
+
 SOLVERS = [
-    pytest.param(PROJECTED, id="native"),
-    pytest.param(LBFGS, id="lbfgs"),
+    pytest.param(PROJECTED, id="projected_gradient"),
+    pytest.param(OPTIMISTIX_LBFGS, id="optimistix_lbfgs"),
     pytest.param(NEWTON, id="newton"),
 ]
+"""The solvers of all tests. `ProjectedGradient` and `alx.Newton` receive the bounds
+in `options`, and `optimistix.LBFGS` receives them as inequality rows."""
 
 
 def minimise(*args, **kwargs):
@@ -278,7 +287,7 @@ def test_start_point_outside_the_box_is_moved_inside(solver):
 def test_lower_above_upper_is_rejected():
     bounds = alx.Bounds(lower=jnp.array([0.0, 1.0]), upper=jnp.array([1.0, 0.5]))
     with pytest.raises(ValueError, match="lower bound must be at most"):
-        minimise(quadratic, LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds)
+        minimise(quadratic, OPTIMISTIX_LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds)
     with pytest.raises(ValueError, match="lower bound must be at most"):
         minimise(quadratic, PROJECTED, jnp.zeros(2), jnp.ones(2), bounds=bounds)
 
@@ -287,7 +296,9 @@ def test_lower_above_upper_is_rejected_under_jit():
     @jax.jit
     def solve(lower):
         bounds = alx.Bounds(lower=lower, upper=jnp.zeros(2))
-        return minimise(quadratic, LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds)
+        return minimise(
+            quadratic, OPTIMISTIX_LBFGS, jnp.zeros(2), jnp.ones(2), bounds=bounds
+        )
 
     with pytest.raises(Exception, match="lower bound must be at most"):
         solve(jnp.array([0.0, 1.0]))
@@ -308,7 +319,7 @@ def test_lower_above_upper_is_rejected_for_concrete_bounds_under_jit():
 
     @jax.jit
     def solve(y0, args):
-        return minimise(quadratic, LBFGS, y0, args, bounds=bounds)
+        return minimise(quadratic, OPTIMISTIX_LBFGS, y0, args, bounds=bounds)
 
     with pytest.raises(ValueError, match="lower bound must be at most"):
         solve(jnp.zeros(2), jnp.ones(2))
@@ -608,7 +619,7 @@ def finite_differences(function, point, step=1e-2):
                 inner_max_steps=20_000,
                 feasibility_tolerance=1e-7,
             ),
-            id="native",
+            id="projected_gradient",
         ),
         pytest.param(
             alx.AugmentedLagrangian(inner=alx.Newton(rtol=1e-13, atol=1e-13)),
@@ -644,7 +655,9 @@ def test_derivatives_with_respect_to_problem_and_bounds_match_finite_differences
         np.testing.assert_allclose(jacobian[0, 4], 1.0, atol=1e-6)
 
 
-@pytest.mark.parametrize("solver", [LBFGS, NEWTON], ids=["lbfgs", "newton"])
+@pytest.mark.parametrize(
+    "solver", [OPTIMISTIX_LBFGS, NEWTON], ids=["optimistix_lbfgs", "newton"]
+)
 def test_fallback_derivatives_match_finite_differences(solver):
     target = jnp.array([1.5, 0.5, 1.0])
     point = jnp.concatenate([target, jnp.array([2.0, 0.9])])
@@ -717,7 +730,7 @@ def test_gradient_stopping_uses_the_projected_gradient():
 
 def test_equal_lower_and_upper_bound_fixes_the_variable():
     bounds = alx.Bounds(lower=jnp.array([0.0, 1.0]), upper=jnp.array([5.0, 1.0]))
-    for solver in (PROJECTED, LBFGS):
+    for solver in (PROJECTED, OPTIMISTIX_LBFGS):
         solution = minimise(
             quadratic, solver, jnp.zeros(2), jnp.array([2.0, 3.0]), bounds=bounds
         )
