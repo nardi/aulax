@@ -25,7 +25,7 @@ bounds = alx.Bounds(lower=0.0, upper=2.0)
 
 ## Specifying bounds
 
-`alx.Bounds(lower, upper)` has two fields. Each field is either `None`, which means that there are no bounds on that side, or a pytree with the structure of `y` whose leaves are scalars or arrays. A leaf is broadcast to the shape of the matching leaf of `y`, so a scalar applies to every element of that leaf. An entry of negative infinity in `lower` or of positive infinity in `upper` means that the element has no bound on that side. When `y` is an array, the fields are numbers or arrays. When `y` is a dictionary, the fields are dictionaries with the same keys. For example, the variables `{"position": ..., "torque": ...}` with limits on the torque only have these bounds:
+`alx.Bounds(lower, upper)` has two fields. Each field is either `None`, which means that there are no bounds on that side, or a pytree with the structure of `y` whose leaves are scalars or arrays. A leaf is broadcast to the shape of the matching leaf of `y`, so a scalar applies to every element of that leaf. An entry of negative infinity in `lower` or of positive infinity in `upper` means that the element has no bound on that side. When `y` is an array, the fields are numbers or arrays. When `y` is a dictionary, the fields are dictionaries with the same keys. For example, these bounds limit only the torque of the variables `{"position": ..., "torque": ...}`:
 
 ```python
 torque_limits = alx.Bounds(
@@ -34,7 +34,7 @@ torque_limits = alx.Bounds(
 )
 ```
 
-The leaves have the dtype of the matching leaves of `y`.
+The bounds are converted to the dtype of the matching leaves of `y`, so float32 variables have float32 bounds.
 
 ## Solving with bounds
 
