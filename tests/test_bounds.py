@@ -16,6 +16,8 @@ from aulax._misc import tree_max_norm
 def test_expand_fills_missing_bounds_with_infinity():
     y = {"a": jnp.zeros(2), "b": jnp.zeros(())}
     expanded = alx.Bounds(lower={"a": 0.0, "b": -1.0}).expand(y)
+    assert expanded.lower is not None
+    assert expanded.upper is not None
     assert jnp.array_equal(expanded.lower["a"], jnp.zeros(2))
     assert expanded.lower["b"] == -1.0
     assert jnp.all(jnp.isposinf(expanded.upper["a"]))
@@ -25,6 +27,7 @@ def test_expand_fills_missing_bounds_with_infinity():
 def test_expand_broadcasts_scalars_and_keeps_the_dtype_of_y():
     y = jnp.zeros((2, 3), jnp.float32)
     expanded = alx.Bounds(upper=2.0).expand(y)
+    assert expanded.upper is not None
     assert expanded.upper.shape == (2, 3)
     assert expanded.upper.dtype == jnp.float32
 
@@ -288,6 +291,27 @@ def test_lower_above_upper_is_rejected_under_jit():
 
     with pytest.raises(Exception, match="lower bound must be at most"):
         solve(jnp.array([0.0, 1.0]))
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_concrete_bounds_closed_over_by_a_jitted_function(solver):
+    @jax.jit
+    def solve(y0, args):
+        return minimise(quadratic, solver, y0, args, bounds=QUADRATIC_BOUNDS)
+
+    solution = solve(jnp.zeros(4), QUADRATIC_TARGET)
+    np.testing.assert_allclose(solution.value, [0.0, 0.5, 2.0, 2.0], atol=1e-6)
+
+
+def test_lower_above_upper_is_rejected_for_concrete_bounds_under_jit():
+    bounds = alx.Bounds(lower=jnp.array([0.0, 1.0]), upper=jnp.array([1.0, 0.5]))
+
+    @jax.jit
+    def solve(y0, args):
+        return minimise(quadratic, LBFGS, y0, args, bounds=bounds)
+
+    with pytest.raises(ValueError, match="lower bound must be at most"):
+        solve(jnp.zeros(2), jnp.ones(2))
 
 
 def test_options_must_not_contain_bounds():

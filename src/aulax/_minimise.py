@@ -666,6 +666,17 @@ def _bounds_are_traced(bounds: Bounds) -> bool:
     return any(isinstance(leaf, Tracer) for leaf in jax.tree.leaves(bounds))
 
 
+def _concrete_bounds_are_ordered(bounds: Bounds) -> bool:
+    """Return whether every lower bound is at most the matching upper bound.
+
+    The bounds must not be traced. Under `jax.jit`, concrete bounds that the
+    function closes over would turn the comparison into a traced value, so the
+    comparison is evaluated at trace time.
+    """
+    with jax.ensure_compile_time_eval():
+        return bool(bounds.is_ordered())
+
+
 def minimise(
     problem: ProblemFunction[Y, Args, State, Aux],
     solver: AugmentedLagrangian,
@@ -726,7 +737,7 @@ def minimise(
     if (
         bounds is not None
         and not _bounds_are_traced(bounds)
-        and not bool(bounds.is_ordered())
+        and not _concrete_bounds_are_ordered(bounds)
     ):
         raise ValueError(_BOUNDS_ORDER_MESSAGE)
     return _minimise(
