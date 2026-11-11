@@ -307,9 +307,9 @@ class LBFGS(optx.AbstractMinimiser):
             scaled_function, has_aux=True
         )(scaled_trial)
         scaled_point = to_scaled(flat_y)
-        old = state.f_info
-        old_value = old.f
-        old_gradient = ravel_pytree(old.grad)[0]
+        previous_info = state.f_info
+        old_value = previous_info.f
+        old_gradient = ravel_pytree(previous_info.grad)[0]
         if scale is not None:
             old_gradient = old_gradient * scale
         displacement = scaled_trial - scaled_point
@@ -336,7 +336,7 @@ class LBFGS(optx.AbstractMinimiser):
         # the gradient difference.
         gradient_difference = trial_gradient - old_gradient
         curvature = displacement @ gradient_difference
-        useful = (
+        store_pair = (
             accept
             & jnp.invert(state.first_step)
             & (
@@ -348,27 +348,29 @@ class LBFGS(optx.AbstractMinimiser):
         )
         length = self.history_length
         steps = jnp.where(
-            useful,
+            store_pair,
             history.steps.at[history.index].set(displacement),
             history.steps,
         )
         gradient_differences = jnp.where(
-            useful,
+            store_pair,
             history.gradient_differences.at[history.index].set(gradient_difference),
             history.gradient_differences,
         )
-        index = jnp.where(useful, (history.index + 1) % length, history.index)
-        count = jnp.where(useful, jnp.minimum(history.count + 1, length), history.count)
+        index = jnp.where(store_pair, (history.index + 1) % length, history.index)
+        count = jnp.where(
+            store_pair, jnp.minimum(history.count + 1, length), history.count
+        )
         if self.diagonal:
             assert history.diagonal_numerator is not None
             assert history.diagonal_denominator is not None
             diagonal_numerator = jnp.where(
-                useful,
+                store_pair,
                 0.9 * history.diagonal_numerator + displacement * gradient_difference,
                 history.diagonal_numerator,
             )
             diagonal_denominator = jnp.where(
-                useful,
+                store_pair,
                 0.9 * history.diagonal_denominator + gradient_difference**2,
                 history.diagonal_denominator,
             )
@@ -398,20 +400,20 @@ class LBFGS(optx.AbstractMinimiser):
             bound_tolerance = jnp.minimum(
                 1e-8, projected_gradient_size(new_scaled_point, new_gradient)
             )
-            held = (
+            fixed_at_bound = (
                 (new_scaled_point <= scaled_lower + bound_tolerance)
                 & (new_gradient > 0)
             ) | (
                 (new_scaled_point >= scaled_upper - bound_tolerance)
                 & (new_gradient < 0)
             )
-            free = jnp.invert(held)
+            free = jnp.invert(fixed_at_bound)
             masked_gradient = jnp.where(free, new_gradient, 0.0)
 
-        last = (index - 1) % length
-        last_step = steps[last]
-        last_difference = gradient_differences[last]
-        gamma = jnp.where(
+        last_row = (index - 1) % length
+        last_step = steps[last_row]
+        last_difference = gradient_differences[last_row]
+        initial_scale = jnp.where(
             count > 0,
             (last_step @ last_difference) / (last_difference @ last_difference),
             1.0,
@@ -424,11 +426,11 @@ class LBFGS(optx.AbstractMinimiser):
             )
             initial_inverse = jnp.where(
                 (diagonal_numerator > 0) & (diagonal_denominator > 0),
-                jnp.clip(fitted, 1e-6 * gamma, 1e6 * gamma),
-                gamma,
+                jnp.clip(fitted, 1e-6 * initial_scale, 1e6 * initial_scale),
+                initial_scale,
             )
         else:
-            initial_inverse = gamma * jnp.ones_like(new_scaled_point)
+            initial_inverse = initial_scale * jnp.ones_like(new_scaled_point)
 
         quasi_newton = -self._inverse_hessian_product(
             new_history, masked_gradient, initial_inverse
@@ -451,12 +453,12 @@ class LBFGS(optx.AbstractMinimiser):
         interpolated = -predicted_change / jnp.where(
             curvature_gap > 0, 2.0 * curvature_gap, jnp.inf
         )
-        shrink = jnp.where(
+        shrink_factor = jnp.where(
             finite & jnp.isfinite(interpolated),
             jnp.clip(interpolated, 0.1, 0.5),
             0.1,
         )
-        shrunk_length = state.step_length * shrink
+        shrunk_length = state.step_length * shrink_factor
         smallest_length = jnp.finfo(trial_value.dtype).eps ** 0.75
         stalled = jnp.invert(accept) & (shrunk_length < smallest_length)
         # A stalled line search is replaced by a steepest descent step with an
