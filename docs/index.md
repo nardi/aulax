@@ -51,17 +51,18 @@ Several JAX libraries cover part of this, and each made different choices than a
 
 aulax is also built around one function that returns everything at once. The objective and the constraints of a real model usually share most of their work, like a simulation whose output feeds both. With one function, that work runs once per point. The function can also pass a warm start to its next evaluation through its `state`, which matters when the model contains an iterative solve of its own.
 
-The augmented Lagrangian method has its costs. It needs more function evaluations than SQP or an interior point method on small problems, and it slows down on problems with many bound constraints, because the inner minimiser handles bounds through the penalty. The [advanced usage](guide/advanced-usage.md) page shows where this bites.
+The augmented Lagrangian method has its costs. It needs more function evaluations than SQP or an interior point method on small problems, and it slows down on problems with many bound constraints, because bounds that are inequality constraints go through the penalty. `Newton` and `LBFGS` handle bounds that are passed as `bounds` themselves, as the [bounds](guide/bounds.md) page describes. The [advanced usage](guide/advanced-usage.md) page shows where this bites.
 
 ## Status
 
 aulax is in early development, and its interface may still change. It currently has:
 
 - equality and inequality constraints on pytrees of any structure, with state threaded between evaluations,
+- bounds on the variables, which `Newton` and `LBFGS` keep every iterate inside, with the reduced costs in the solution,
 - the ALGENCAN multiplier and penalty updates, with safeguards and optional per-constraint penalties,
 - support for `jax.jit` and `jax.vmap`, and for float32 as well as float64,
 - implicit differentiation through the KKT conditions, with a dense or matrix-free linear solver, and unrolled differentiation as an alternative,
-- a trust-region `Newton` inner minimiser with dense, sparse or matrix-free Hessians, and reuse of the Hessian approximation across outer iterations for the quasi-Newton minimisers.
+- a trust-region `Newton` inner minimiser with dense, sparse or matrix-free Hessians, an `LBFGS` inner minimiser that needs only gradients, and reuse of the Hessian approximation across outer iterations for the quasi-Newton minimisers.
 
 Several things are planned but not there yet: sparse direct linear solvers for the implicit derivatives, and a least-squares variant that uses Gauss-Newton for the inner solves.
 
