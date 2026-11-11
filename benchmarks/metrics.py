@@ -22,6 +22,19 @@ OBJECTIVE_ABSOLUTE_TOLERANCE = 1e-8
 """The absolute difference from the known objective that still counts as equal,
 for known objectives near zero."""
 
+SINGLE_PRECISION_FEASIBILITY_TOLERANCE = 1e-4
+"""The largest constraint violation that counts as solved in float32.
+
+The solvers stop within about their feasibility tolerance of $10^{-5}$ in float32,
+and rounding errors of the constraint residuals are about $10^{-6}$.
+"""
+
+SINGLE_PRECISION_OBJECTIVE_RELATIVE_TOLERANCE = 1e-4
+"""The relative difference from the known objective that counts as equal, in float32."""
+
+SINGLE_PRECISION_OBJECTIVE_ABSOLUTE_TOLERANCE = 1e-5
+"""The absolute difference from the known objective that counts as equal, in float32."""
+
 OUTCOMES = (
     "solved",
     "below_reference",
@@ -62,18 +75,30 @@ def classify_outcome(
     infeasibility: float,
     objective: float,
     known_objective: float | None,
+    single_precision: bool | None = None,
 ) -> str:
-    """Return the outcome of a finished solve, as defined in `OUTCOMES`."""
+    """Return the outcome of a finished solve, as defined in `OUTCOMES`.
+
+    `single_precision` selects the looser tolerances for float32. `None` selects them
+    when `jax_enable_x64` is off, which is how the benchmark runner sets float32.
+    """
+    if single_precision is None:
+        single_precision = not jax.config.read("jax_enable_x64")
+    if single_precision:
+        feasibility_tolerance = SINGLE_PRECISION_FEASIBILITY_TOLERANCE
+        relative_tolerance = SINGLE_PRECISION_OBJECTIVE_RELATIVE_TOLERANCE
+        absolute_tolerance = SINGLE_PRECISION_OBJECTIVE_ABSOLUTE_TOLERANCE
+    else:
+        feasibility_tolerance = FEASIBILITY_TOLERANCE
+        relative_tolerance = OBJECTIVE_RELATIVE_TOLERANCE
+        absolute_tolerance = OBJECTIVE_ABSOLUTE_TOLERANCE
     if not converged or not np.isfinite(objective):
         return "failed"
-    if infeasibility > FEASIBILITY_TOLERANCE:
+    if infeasibility > feasibility_tolerance:
         return "failed"
     if known_objective is None:
         return "solved"
-    tolerance = max(
-        OBJECTIVE_ABSOLUTE_TOLERANCE,
-        OBJECTIVE_RELATIVE_TOLERANCE * abs(known_objective),
-    )
+    tolerance = max(absolute_tolerance, relative_tolerance * abs(known_objective))
     if abs(objective - known_objective) <= tolerance:
         return "solved"
     if objective < known_objective:
