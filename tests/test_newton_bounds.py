@@ -166,6 +166,30 @@ def test_a_fixed_variable_does_not_stall_the_stopping_test():
     assert int(solution.stats["num_steps"]) < 20
 
 
+@pytest.mark.parametrize("seed", [5, 10, 15])
+def test_a_fixed_variable_stays_exactly_at_its_bound(seed):
+    # The variables have scales that differ by four orders of magnitude, so the
+    # linear solve for the free variables has rounding errors. The third variable
+    # is at its lower bound with a gradient that points out of the box. Its step
+    # must be exactly zero and not rounding noise, or the variable would leave the
+    # bound and the projected gradient would count it as a free variable.
+    scale = 10.0 ** jnp.array([2.0, -2.0, 1.0, -1.0])
+    factor = jax.random.normal(jax.random.key(seed), (4, 4))
+    hessian = (factor @ factor.T + jnp.eye(4)) * jnp.outer(scale, scale)
+    linear = jnp.array([1.0, 0.5, 37.0, 0.2]) * scale
+
+    def fn(y, args):
+        return 0.5 * y @ hessian @ y + linear @ y, None
+
+    bounds = alx.Bounds(
+        lower=jnp.array([-10.0, -10.0, 0.0, -10.0]) / scale,
+        upper=jnp.full(4, 10.0) / scale,
+    )
+    start = jnp.array([0.1, 0.1, 0.0, 0.1]) / scale
+    solution = solve(fn, alx.Newton(rtol=1e-10, atol=1e-10), start, bounds)
+    assert float(solution.value[2]) == 0.0
+
+
 def test_a_variable_with_equal_bounds_is_fixed():
     def fn(y, args):
         return jnp.sum((y - 2.0) ** 2), None

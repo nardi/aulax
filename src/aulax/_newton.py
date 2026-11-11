@@ -292,7 +292,11 @@ class Newton(optx.AbstractMinimiser):
             next_flat_y = flat_new_y + prepared.step(scalar, hessian, gradient, radius)
         else:
             free = _free_variables(flat_new_y, gradient, lower, upper)
-            direction = prepared.step(scalar, hessian, gradient, radius, free)
+            # Rounding errors of the linear solve can leave a tiny nonzero entry at a
+            # fixed variable, which would move the variable off its bound.
+            direction = jnp.where(
+                free, prepared.step(scalar, hessian, gradient, radius, free), 0.0
+            )
             projected_newton = jnp.clip(flat_new_y + direction, lower, upper)
             # The projection can turn the Newton step into an ascent direction.
             # Then the trial point comes from a projected steepest descent step.
