@@ -57,23 +57,22 @@ class AugmentedLagrangian(eqx.Module):
     """The rule that sets and grows the penalty.
 
     `None` selects `AlgencanPenaltyUpdate()` for `Newton` and other minimisers.
-    For `LBFGS` it selects an initial penalty of 10 and a growth factor of 100,
-    since a quasi-Newton minimiser needs a larger penalty to reach feasibility in
-    few outer iterations.
+    For `LBFGS` it selects `AlgencanPenaltyUpdate` with an initial penalty of 10
+    and a growth factor of 100.
     """
     tolerance_schedule: ToleranceSchedule | None = None
     """The rule that sets the tolerance of each inner solve.
 
     `None` selects `GeometricToleranceSchedule()` for `Newton` and other
-    minimisers, and a start at $10^{-8}$ for `LBFGS`.
+    minimisers, and `GeometricToleranceSchedule(initial=1e-8)` for `LBFGS`.
     """
     inner_tolerance_floor: float | None = None
     r"""The smallest tolerance that an inner solve uses.
 
-    The `rtol` and `atol` of `inner` are raised to this value. `None` selects zero
-    in float64, so that the tolerances of `inner` apply, and $10^{-6}$ in float32,
-    where gradients carry rounding errors of about that size and a tighter
-    tolerance only adds steps.
+    An inner tolerance below this value is replaced by it. `None` selects zero in
+    float64, so that the tolerances of `inner` apply, and $10^{-6}$ in float32,
+    where the rounding error of a gradient is about that size and a tighter
+    tolerance only increases the number of steps.
     """
     stationarity_tolerance: float | None = None
     r"""The bound on the gradient of the Lagrangian at the solution.
@@ -139,14 +138,14 @@ class AugmentedLagrangian(eqx.Module):
     unbounded_threshold: float | None = None
     r"""The magnitude below which the augmented Lagrangian counts as unbounded.
 
-    When the value of the augmented Lagrangian at an inner iterate is below minus
-    this threshold, or the iterate is not finite, the inner solve has left the
-    region where the penalty term bounds the objective. The solver then returns to
-    the point where the inner solve started and grows the penalty. A line search
-    can follow such a direction for many steps, while the trust region of `Newton`
-    stops near the start. `None` selects $10^{20}$, the `fmin` of ALGENCAN, for
-    minimisers other than `Newton`, and turns the check off for `Newton`.
-    Infinity turns the check off.
+    When the value of the augmented Lagrangian at an inner iterate is below
+    minus this threshold, or the iterate is not finite, the inner solve is in a
+    region where the penalty term does not bound the objective from below. The
+    solver then restarts the inner solve from its starting point with a larger
+    penalty. A line search can take many steps along such a direction, while the
+    trust radius of `Newton` limits the step length. `None` selects $10^{20}$,
+    the `fmin` of ALGENCAN, for minimisers other than `Newton`, and turns the
+    check off for `Newton`. Infinity turns the check off.
     """
     verbose: bool = eqx.field(default=False, static=True)
     """Whether to print one line per outer iteration.

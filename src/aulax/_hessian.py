@@ -471,8 +471,9 @@ class _DensePrepared:
     def step(self, scalar, data, gradient, radius, free=None):
         if free is not None:
             # The rows and columns of the fixed variables are replaced by those of
-            # the identity, and the gradient is zero there. Each fixed variable then
-            # decouples from the others and has a zero step.
+            # the identity, and the gradient is zero there. The step is then zero at
+            # the fixed variables, and at the free variables it is the step for the
+            # Hessian with those rows and columns removed.
             both_free = free[:, None] & free[None, :]
             data = jnp.where(both_free, data, 0.0) + jnp.diag(
                 jnp.where(free, 0.0, 1.0).astype(data.dtype)
@@ -520,9 +521,9 @@ class _MatrixFreePrepared:
         else:
 
             def product(vector):
-                # The identity at the fixed variables keeps the operator positive
-                # definite there. The gradient is zero there, so the conjugate
-                # gradient iterates stay at zero at those variables.
+                # The operator is the identity at the fixed variables. The gradient
+                # is zero at those variables, so the conjugate gradient iterates
+                # are zero there.
                 restricted = jnp.where(free, vector, 0.0)
                 return jnp.where(free, full_product(restricted), vector)
 
@@ -594,7 +595,8 @@ class _SparsePrepared:
         diagonal = jnp.maximum(shift, floor)
         if free is not None:
             # The entries of the fixed variables are zero in `data`, so a one on
-            # their diagonal turns their rows and columns into those of the identity.
+            # their diagonal makes their rows and columns equal to those of the
+            # identity.
             diagonal = diagonal + jnp.where(free, 0.0, 1.0).astype(data.dtype)
         values = (
             jnp.zeros(len(self.union), data.dtype)
@@ -639,8 +641,8 @@ class _SparsePrepared:
         transformed = self.splineax.stateful_solve_transform(shifted)
         if free is None:
             return transformed(data, gradient, radius)
-        # Entries of the Hessian that touch a fixed variable are zeroed, and the
-        # gradient is zero at the fixed variables.
+        # Entries of the Hessian in a row or column of a fixed variable are set to
+        # zero, and the gradient is set to zero at the fixed variables.
         both_free = free[self.rows] & free[self.cols]
         return transformed(
             jnp.where(both_free, data, 0.0),

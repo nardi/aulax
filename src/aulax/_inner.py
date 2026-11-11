@@ -178,14 +178,15 @@ class OptimistixStateAccess(eqx.Module):
         new_state: _LBFGSState,
         penalty_ratio: Scalar,
     ) -> _LBFGSState:
-        """Copy the secant pairs of `alx.LBFGS` into `new_state`.
+        """Return `new_state` with the secant pairs of `old_state` as its history.
 
-        `"keep"` always copies them. The other choices copy them unless the penalty
-        increased, in which case the history of `new_state` is empty. The secant
-        pairs are in the scaled variables of `old_state`, which are the same as the
-        ones of `new_state`, since both come from the same bounds. The first step of
-        the new inner solve accepts the starting point without a secant pair, so the
-        copied history is intact when the first direction is computed.
+        `"keep"` always uses the pairs of `old_state`. The other choices use them
+        unless the penalty increased, in which case `new_state.history` is used,
+        which has no secant pairs. The pairs are in the scaled variables, and
+        `old_state` and `new_state` have the same `variable_scale` because both
+        are computed from the same bounds. The first step of the new inner solve
+        accepts the starting point without a secant pair, so the first direction
+        is computed from the pairs of `old_state`.
         """
         if self.hessian_reuse == "keep":
             history = old_state.history

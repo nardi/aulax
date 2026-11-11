@@ -14,7 +14,7 @@ class Bounds(eqx.Module):
     Each field is `None` or a pytree whose leaves are scalars or arrays that
     broadcast to the leaves of `y`. A `None` field and an infinite entry both mean
     that there is no bound. The bounds are not part of the augmented Lagrangian,
-    and the inner minimiser keeps every iterate inside the box.
+    and every iterate of the inner minimiser is inside the box.
     """
 
     lower: PyTree[Float[Array, "..."]] | None = None
@@ -69,15 +69,15 @@ class Bounds(eqx.Module):
     def projected_gradient(
         self, y: PyTree[Float[Array, "..."]], gradient: PyTree[Float[Array, "..."]]
     ) -> PyTree[Float[Array, "..."]]:
-        """Return the part of `gradient` that points into the box at `y`.
+        """Return `gradient`, set to zero where `-gradient` points out of the box.
 
-        These bounds must be expanded to the shape of `y`. An element of `y` that
-        is at its lower bound keeps its gradient only when the gradient is
-        negative, since only then can a step into the box decrease the function.
-        The same holds for the upper bound and a positive gradient. All other
-        elements keep their gradient. The largest absolute element of the result
-        is zero at a point that satisfies the first-order conditions of the
-        bounded problem.
+        These bounds must be expanded to the shape of `y`. At an element of `y` that
+        is at its lower bound, the result is zero when the gradient is positive,
+        since the negative gradient then points out of the box. Otherwise the
+        result is the gradient. The same holds at the upper bound for a negative
+        gradient. At all other elements the result is the gradient. The largest
+        absolute element of the result is zero at a point that satisfies the
+        first-order conditions of the bounded problem.
         """
 
         def project(y, gradient, lower, upper):

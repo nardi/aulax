@@ -38,11 +38,14 @@ def _projected_gradient(
     lower: Float[Array, " n"],
     upper: Float[Array, " n"],
 ) -> Float[Array, " n"]:
-    """Return the gradient with the components that point out of the box removed.
+    """Return `point` minus the projection of `point - gradient` onto the box.
 
-    This is the difference between `point` and the projection of `point` minus
-    the gradient onto the box. It is zero exactly at the points that satisfy the
-    first-order conditions of the problem with bounds.
+    An element is the gradient element when `point - gradient` is inside the box.
+    Otherwise it is the difference between `point` and the bound that
+    `point - gradient` crosses, so it is zero at a variable on a bound that the
+    negative gradient points out of. This differs from `Bounds.projected_gradient`,
+    which does not shorten any element. The result is zero exactly at the points
+    that satisfy the first-order conditions of the problem with bounds.
     """
     return point - jnp.clip(point - gradient, lower, upper)
 
@@ -135,7 +138,10 @@ class Newton(optx.AbstractMinimiser):
     """
 
     supports_bounds: ClassVar[bool] = True
-    """Whether the minimiser reads `options["bounds"]` and keeps `y` inside the box."""
+    """Whether the minimiser reads `options["bounds"]`.
+
+    If so, every iterate `y` is inside the box.
+    """
 
     rtol: float = 1e-8
     """The relative tolerance of the stopping test."""
@@ -298,8 +304,8 @@ class Newton(optx.AbstractMinimiser):
                 free, prepared.step(scalar, hessian, gradient, radius, free), 0.0
             )
             projected_newton = jnp.clip(flat_new_y + direction, lower, upper)
-            # The projection can turn the Newton step into an ascent direction.
-            # Then the trial point comes from a projected steepest descent step.
+            # The projected Newton step can be an ascent direction. In that case
+            # the trial point is the projection of a steepest descent step.
             free_gradient = jnp.where(free, gradient, 0.0)
             gradient_norm = jnp.linalg.norm(free_gradient)
             descent_length = radius / jnp.where(gradient_norm > 0, gradient_norm, 1.0)

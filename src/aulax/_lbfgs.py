@@ -26,7 +26,7 @@ class _LBFGSInfo(eqx.Module):
     f: Scalar
     """The function value."""
     grad: PyTree[Float[Array, "..."]]
-    """The gradient of the function in the original variables, shaped like `y`."""
+    """The gradient in the original variables, with the structure of `y`."""
 
 
 class _LBFGSHistory(eqx.Module):
@@ -38,7 +38,7 @@ class _LBFGSHistory(eqx.Module):
     steps: Float[Array, "history size"]
     """The steps between accepted points, with the newest at `index - 1`."""
     gradient_differences: Float[Array, "history size"]
-    """The differences of the gradient over the steps, in the rows of `steps`."""
+    """The differences of the gradient over the steps, in the same rows as `steps`."""
     count: Int[Array, ""]
     """The number of rows that hold a secant pair."""
     index: Int[Array, ""]
@@ -67,7 +67,7 @@ class _LBFGSState(eqx.Module):
     direction: Float[Array, " size"]
     """The search direction in the scaled variables."""
     step_length: Scalar
-    """The multiple of `direction` that leads to `y_eval`."""
+    """The factor that multiplies `direction` in the computation of `y_eval`."""
     first_step: Bool[Array, ""]
     """Whether the next evaluation is the first one, which is always accepted."""
     history: _LBFGSHistory
@@ -85,19 +85,21 @@ class LBFGS(optx.AbstractMinimiser):
 
     The search direction is the product of an inverse Hessian approximation from
     the last `history_length` secant pairs with the negative gradient. Each step
-    evaluates the function and its gradient at one trial point. The trial point is
-    accepted when the function decreased by at least $10^{-4}$ times the decrease
-    that the gradient predicts along the step. After a rejection, the step length
-    shrinks to the minimum of a quadratic fitted along the step. A function value
-    that changes by less than its rounding level also counts as accepted when the
-    projected gradient decreases. After a line search that cannot find a decrease,
-    the history is discarded and the next step is a steepest descent step.
+    evaluates the function and its gradient at one trial point. The trial point
+    is accepted when the function decreased by at least $10^{-4}$ times the
+    decrease that the gradient predicts along the step. After a rejection, the
+    step length is multiplied by the minimiser of a quadratic fitted along the
+    step, clipped to the interval from 0.1 to 0.5. A function value that changes
+    by less than its rounding level also counts as accepted when the projected
+    gradient decreases. After a line search that cannot find a decrease, the
+    history is discarded and the next step is a steepest descent step.
 
     With `options["bounds"]`, an expanded `Bounds`, every trial point is clipped
-    into the box, so that no iterate leaves it. The direction is then computed on
-    the free variables only, which are the ones that the gradient does not hold at
-    a bound. Without bounds, the clipping and the masking are not traced and the
-    code is the one of an unconstrained minimiser.
+    into the box, so every iterate is inside the box. The direction is then
+    computed on the free variables only. A variable is not free when it is at a
+    bound and the negative gradient points out of the box. Without bounds, the
+    clipping and the masking are not traced and the traced code is that of an
+    unconstrained minimiser.
 
     The minimiser stops when the last accepted step changed the variables and the
     function value by less than `rtol` and `atol` allow, or when the projected
@@ -127,7 +129,10 @@ class LBFGS(optx.AbstractMinimiser):
     """
 
     supports_bounds: ClassVar[bool] = True
-    """Whether the minimiser reads `options["bounds"]` and keeps iterates inside it."""
+    """Whether the minimiser reads `options["bounds"]`.
+
+    If so, every iterate is inside the box of the bounds.
+    """
 
     def __check_init__(self):
         if self.variable_scaling not in VARIABLE_SCALING_OPTIONS:
@@ -260,9 +265,8 @@ class LBFGS(optx.AbstractMinimiser):
     ) -> tuple[PyTree[Float[Array, "..."]], _LBFGSState, PyTree]:
         """Evaluate the trial point, accept or reject it, and plan the next trial.
 
-        Like the optimistix minimisers, this returns the aux output of the point
-        that went into the step, and keeps the one of the accepted point in the
-        state.
+        Like the optimistix minimisers, this returns the aux output of `y`, and
+        stores the aux output of the accepted point in `state.aux`.
         """
         flat_y, unravel = ravel_pytree(y)
         flat_trial, _ = ravel_pytree(state.y_eval)
@@ -312,7 +316,8 @@ class LBFGS(optx.AbstractMinimiser):
         predicted_change = old_gradient @ displacement
         finite = jnp.isfinite(trial_value) & jnp.all(jnp.isfinite(trial_gradient))
         armijo = trial_value <= old_value + 1e-4 * predicted_change
-        # Below the rounding level of the function value, the Armijo test is noise.
+        # Below the rounding level of the function value, rounding errors dominate
+        # the Armijo test.
         # A step that lowers the projected gradient is then accepted, since
         # otherwise the step length shrinks until the solve stalls.
         noise = (
@@ -326,8 +331,9 @@ class LBFGS(optx.AbstractMinimiser):
         )
         accept = state.first_step | ((armijo | below_noise) & finite)
 
-        # The secant pair of an accepted step joins the history when its curvature
-        # is positive.
+        # The secant pair of an accepted step is stored in the history when its
+        # curvature exceeds 1e-10 times the product of the norms of the step and
+        # the gradient difference.
         gradient_difference = trial_gradient - old_gradient
         curvature = displacement @ gradient_difference
         useful = (
@@ -386,8 +392,9 @@ class LBFGS(optx.AbstractMinimiser):
             masked_gradient = new_gradient
         else:
             scaled_lower, scaled_upper = scaled_box
-            # A variable at a bound is held there when the gradient points out of
-            # the box. The tolerance also holds variables that are very close.
+            # A variable is treated as fixed when it is at a bound and the negative
+            # gradient points out of the box. Variables within `bound_tolerance`
+            # of a bound count as being at the bound.
             bound_tolerance = jnp.minimum(
                 1e-8, projected_gradient_size(new_scaled_point, new_gradient)
             )
@@ -437,8 +444,9 @@ class LBFGS(optx.AbstractMinimiser):
         )
         direction = jnp.where(descent & (count > 0), quasi_newton, steepest)
 
-        # After a rejected trial, shrink the step to the minimum of a quadratic
-        # fitted to the value, the slope and the trial value along the step.
+        # After a rejected trial, the step length is multiplied by the minimiser of
+        # a quadratic fitted to the value, the slope and the trial value along the
+        # step. The factor is clipped to the interval from 0.1 to 0.5.
         curvature_gap = trial_value - old_value - predicted_change
         interpolated = -predicted_change / jnp.where(
             curvature_gap > 0, 2.0 * curvature_gap, jnp.inf
@@ -451,8 +459,8 @@ class LBFGS(optx.AbstractMinimiser):
         shrunk_length = state.step_length * shrink
         smallest_length = jnp.finfo(trial_value.dtype).eps ** 0.75
         stalled = jnp.invert(accept) & (shrunk_length < smallest_length)
-        # A stalled line search restarts from a steepest descent step without
-        # history, and the minimiser stops if it had no history already.
+        # A stalled line search is replaced by a steepest descent step with an
+        # empty history, and the minimiser stops if the history was already empty.
         restart = stalled & (state.history.count > 0)
         new_history = eqx.tree_at(
             lambda current: current.count,

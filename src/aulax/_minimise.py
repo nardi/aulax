@@ -146,9 +146,9 @@ def _solve(
     multipliers, the bounds, the inner solver options, the step limit and the
     while loop to run. It is a single tuple so that an optimistix adjoint can
     differentiate through it. `bounds` is expanded to the shape of `y0` and is only
-    set when the inner minimiser handles the bounds, which then keeps every
-    iterate inside the box. The third element of the result is the `Bounds` of
-    reduced costs in that case, and `None` otherwise.
+    set when the inner minimiser handles the bounds. Every iterate of that
+    minimiser is inside the box. The third element of the result is the `Bounds`
+    of reduced costs in that case, and `None` otherwise.
     """
     (
         problem,
@@ -213,7 +213,7 @@ def _solve(
     def stationarity_measure(
         y: Y, gradient: PyTree[Array] | None
     ) -> PyTree[Array] | None:
-        """Return the part of `gradient` at `y` that the bounds do not block."""
+        """Return `gradient`, set to zero where `-gradient` points out of the box."""
         if gradient is None or bounds is None:
             return gradient
         return bounds.projected_gradient(y, gradient)
@@ -334,8 +334,9 @@ def _solve(
         `evaluation` belongs to `loop.y`, the inner solution. `gradient` is the
         gradient of the augmented Lagrangian there, if the inner solver provides
         it. It equals the gradient of the Lagrangian with the new multiplier
-        estimates, so its size measures stationarity. With bounds, only its part
-        that points into the box counts.
+        estimates, so its size measures stationarity. With bounds, an element at a
+        variable on a bound is replaced by zero when the negative gradient points
+        out of the box.
         """
         estimates = solver.multiplier_update.update_multipliers(
             loop.multipliers, loop.penalty, evaluation
@@ -415,7 +416,7 @@ def _solve(
         )
 
     def restart_inner_solve(loop: _LoopState) -> _LoopState:
-        """Return to the start of the inner solve with a larger penalty.
+        """Return `loop` with the inner solve reset to its start and a larger penalty.
 
         The penalty update is called with an infeasibility that has not decreased,
         so it grows the penalty as it would after a failed inner solve. When the
@@ -605,7 +606,8 @@ def _kkt_residual(
     $l - y \le 0$ and $y - u \le 0$ with the reduced costs as their multipliers.
     The gradient then also has the terms $-\nu_l + \nu_u$, and an active bound
     adds the residual $l - y$ or $y - u$ and an inactive one adds $-\nu$, so that
-    the Jacobian stays symmetric.
+    the Jacobian is symmetric. Here $\nu_l$ and $\nu_u$ are the reduced costs of
+    the lower and upper bounds and $\nu$ is the one of the bound in that row.
     """
     y, multipliers, bound_multipliers = root
     problem, _, _, args, _, _, bounds, *_ = inputs
@@ -723,11 +725,12 @@ def minimise(
         multipliers: Initial multipliers, shaped like the constraints. `None`
             starts from zero.
         bounds: A box on `y`, or `None` for no bounds. A minimiser of the solver
-            whose class has `supports_bounds` set receives the expanded bounds as
-            `options["bounds"]` and keeps its iterates inside the box. The
-            bounds are then not part of the augmented Lagrangian. For any other
-            minimiser, every finite bound is added to the inequality constraints,
-            and the multipliers of those rows are returned as `bound_multipliers`.
+            whose class has `supports_bounds` set receives the expanded bounds
+            as `options["bounds"]`, and every iterate of that minimiser is
+            inside the box. The bounds are then not part of the augmented
+            Lagrangian. For any other minimiser, every finite bound is added to
+            the inequality constraints, and the multipliers of those rows are
+            returned as `bound_multipliers`.
         options: Runtime options passed to the inner solver. They must not have
             the key `"bounds"`, which `bounds` sets.
         max_steps: The maximum number of inner steps, summed over all inner

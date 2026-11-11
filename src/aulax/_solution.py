@@ -40,8 +40,8 @@ class Statistics(eqx.Module):
     stationarity: Scalar
     r"""The largest element of the gradient of the Lagrangian at the solution.
 
-    With bounds, only the part of the gradient that points into the box counts at
-    a variable that is at a bound.
+    With bounds, the element of the gradient at a variable on a bound is replaced
+    by zero when the negative gradient points out of the box.
     """
 
 
@@ -67,8 +67,8 @@ class Solution(eqx.Module, Generic[Y, State, Aux]):
     bound_multipliers: Bounds | None = None
     r"""The multipliers of the bounds on `value`, or `None` without bounds.
 
-    Each field has the shape of `value`. An element is the reduced cost of that
-    variable, which is the part of the gradient of the Lagrangian that the
-    active bound balances. It is nonnegative, and zero for a bound that is not
-    active or does not exist.
+    Each field has the structure and shapes of `value`. An element is the reduced
+    cost of that variable, which is the multiplier of its active bound in the
+    stationarity condition of the Lagrangian. It is nonnegative, and zero for a
+    bound that is not active or does not exist.
     """
