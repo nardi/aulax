@@ -1,6 +1,6 @@
 # Inner solvers
 
-Every outer iteration of the augmented Lagrangian method minimizes a smooth function with an inner minimiser. The default is `alx.Newton`, which takes Newton steps with the exact Hessian inside a trust region. It has three ways of doing its linear algebra, and this page explains how it chooses and how to choose yourself.
+Every outer iteration of the augmented Lagrangian method minimizes a smooth function with an inner minimiser. The default is `alx.Newton`, which takes Newton steps with the exact Hessian inside a trust region. It has three ways of doing its linear algebra, and this page explains how it chooses and how to choose yourself. `alx.LBFGS` is the first-order alternative, for problems whose second derivatives are unavailable or too expensive. Both handle [bounds on the variables](bounds.md) themselves.
 
 The examples use a small chained problem, where each variable is tied to its neighbour by an equality constraint.
 
@@ -135,10 +135,50 @@ assert solution.stats.infeasibility <= 1e-6
 
 Matrix-free mode stops each inner solve on the gradient of the augmented Lagrangian. The default `inner_stopping=None` selects that automatically.
 
+## L-BFGS
+
+`alx.LBFGS` is a limited-memory BFGS minimiser that needs only the gradient of the augmented Lagrangian. It stores the last `history_length` pairs of a step and a gradient difference, which is `2 * history_length * n` numbers for $n$ variables, and computes each search direction from them with the two-loop recursion. Each step evaluates the function and its gradient at one trial point. The trial point is accepted when the function decreased by at least $10^{-4}$ times the decrease that the gradient predicts along the step. After a rejection, the step length shrinks to the minimum of a quadratic fitted along the step. After a line search that cannot find a decrease, the history is discarded and the next step is a steepest descent step. The minimiser stops when the last accepted step changed the variables and the function value by less than `rtol` and `atol` allow, or when the projected gradient is at most `atol`. Both are $10^{-10}$ by default.
+
+<!-- name: test_inner_solvers -->
+```python
+lbfgs = alx.AugmentedLagrangian(inner=alx.LBFGS())
+solution = alx.minimise(chain, lbfgs, jnp.zeros(20), target, max_steps=4096)
+assert solution.stats.infeasibility <= 1e-6
+```
+
+The fields of `alx.LBFGS` are:
+
+- `history_length`, the number of secant pairs, 20 by default.
+- `variable_scaling`, which is `"bounds"` by default and can be `"none"`. With `"bounds"`, a variable with two finite bounds is divided by the width of its box and all others by one. The step lengths and both stopping tests are then measured in the divided variables. Without bounds, the choice has no effect.
+- `diagonal`, which is false by default. When it is true, the initial inverse Hessian of the recursion is a diagonal that is fitted to the secant pairs. Otherwise it is a multiple of the identity.
+- `rtol`, `atol` and `norm`, which have the same meaning as for the optimistix minimisers.
+
+The state of `alx.LBFGS` has the gradient in `f_info.grad` and the aux output of the accepted point in `aux`, which are the fields that `alx.OptimistixStateAccess` reads. The multipliers are therefore updated in the iteration where an inner solve ends, and `alx.GradientStopping` can use the gradient. The history is also what `hessian_reuse` of `alx.OptimistixStateAccess` copies into the next inner solve.
+
+With `inner=alx.LBFGS()`, `alx.AugmentedLagrangian` selects these settings for the fields that are `None`:
+
+- `penalty_update` is `alx.AlgencanPenaltyUpdate(initial_value=10.0, growth_factor=100.0)`.
+- `tolerance_schedule` is `alx.GeometricToleranceSchedule(initial=1e-8)`.
+- `inner_state_access` is `alx.OptimistixStateAccess(hessian_reuse="keep_unless_penalty_increased")`, so the history of the previous inner solve is kept unless the penalty increased.
+- `feasibility_tolerance` is $10^{-8}$ in float64 and $10^{-5}$ in float32, which is the same as for `alx.Newton`.
+- `inner_tolerance_floor` is zero in float64 and $10^{-6}$ in float32. This default depends on the dtype and not on the minimiser.
+
+The other fields have the defaults that they have for any minimiser other than `alx.Newton`. The stationarity check is off, the penalty stops growing once the infeasibility is within 0.1 times the feasibility tolerance, and `unbounded_threshold` is $10^{20}$. The values above were chosen on the benchmark problems. On the Hock-Schittkowski problems and the S2MPJ problems with bounds, `alx.LBFGS` solves NUMBERS-PENDING.
+
+## Bounds in the inner minimisers
+
+`alx.Newton` and `alx.LBFGS` have the class attribute `supports_bounds`. When `alx.minimise` is called with `bounds`, they receive the box as `options["bounds"]` and run as projected variants, and every point they evaluate is inside the box. Without bounds they run as described above, and the code of the projection is not traced. The [bounds](bounds.md) page describes what this means for the solution.
+
+`alx.Newton` is then a projected Newton method in the style of TRON. At the accepted point, a variable is fixed when it is at a bound and the negative gradient points out of the box, or when its lower and upper bound are equal. The trust-region step is computed for the free variables only, from the Hessian with the rows and columns of the fixed variables removed. The trial point is the projection of the accepted point plus this step onto the box. When the projected step is not a descent direction, the trial point is the projection of a steepest descent step with the length of the trust radius. The acceptance test and the update of the radius use the projected step, so they are the same as without bounds. The test for rounding noise compares the norms of the projected gradients.
+
+`alx.LBFGS` clips every trial point into the box, and the search direction is computed for the free variables only. A variable is held at its bound when the gradient points out of the box. The stopping test on the gradient uses the projected gradient, and `variable_scaling` divides the variables by the width of their box. The history of secant pairs is stored in these divided variables.
+
+Any other minimiser does not receive the box. `alx.minimise` adds the finite bounds to the inequality constraints for it, as the [bounds](bounds.md#two-ways-of-handling-bounds) page describes.
+
 ## Other minimisers
 
-Any optimistix minimiser can still do the inner solves, for example `optx.BFGS` or `optx.LBFGS`. They need only first derivatives, which matters for functions that cannot be differentiated twice. The stationarity check is then off by default, since their stopping tests do not reach it. Set `stationarity_tolerance` to turn it on.
+Any optimistix minimiser can still do the inner solves, for example `optx.BFGS` or `optx.LBFGS`. Like `alx.LBFGS`, they need only first derivatives, which matters for functions that cannot be differentiated twice. Unlike `alx.LBFGS`, they do not handle bounds, so `alx.minimise` adds the bounds to their inequality constraints. The stationarity check is off by default for these minimisers and for `alx.LBFGS`, since their stopping tests do not reach it. Set `stationarity_tolerance` to turn it on.
 
-A line search can follow a direction along which the objective decreases faster than the penalty term grows, which happens for a cubic objective with bounds. `unbounded_threshold` handles this for minimisers other than `Newton`. When the augmented Lagrangian at an inner iterate is below $-10^{20}$, the solver returns to the start of the inner solve and grows the penalty.
+A line search can follow a direction along which the objective decreases faster than the penalty term grows, which happens for a cubic objective whose bounds are inequality constraints. `unbounded_threshold` handles this for minimisers other than `Newton`, including `alx.LBFGS`. When the augmented Lagrangian at an inner iterate is below $-10^{20}$, the solver returns to the start of the inner solve and grows the penalty.
 
-On the Hock-Schittkowski benchmark, `optx.LBFGS` solved 46 of the 48 problems that `Newton` solved, with about 5 times as many evaluations on those problems. It needed a tight tolerance schedule, such as `GeometricToleranceSchedule(initial=1e-8)` with `rtol=atol=1e-10`, and no problem scaling. The `lbfgs_tight_penalty_10` benchmark configuration has these settings.
+On the Hock-Schittkowski benchmark, `optx.LBFGS` solved 46 of the 48 problems that `Newton` solved, with about 5 times as many evaluations on those problems. It needed a tight tolerance schedule, such as `GeometricToleranceSchedule(initial=1e-8)` with `rtol=atol=1e-10`, and no problem scaling. The `lbfgs_tight_penalty_10` benchmark configuration has these settings. The tolerance schedule and the initial penalty of 10 are defaults of `alx.LBFGS`, which is the minimiser to use when the inner solves need only first derivatives.
