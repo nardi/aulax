@@ -105,13 +105,13 @@ class LBFGS(optx.AbstractMinimiser):
     variables divided by the scale that `variable_scaling` selects.
     """
 
-    rtol: float = 1e-8
+    rtol: float = 1e-10
     """The relative tolerance of the stopping test."""
-    atol: float = 1e-8
+    atol: float = 1e-10
     """The absolute tolerance of the stopping tests."""
     norm: Callable[[PyTree], Scalar] = optx.max_norm
     """The norm in which the change of the variables is measured."""
-    history_length: int = eqx.field(default=10, static=True)
+    history_length: int = eqx.field(default=20, static=True)
     """The number of secant pairs in the inverse Hessian approximation."""
     variable_scaling: str = eqx.field(default="bounds", static=True)
     """How the variables are scaled, which is `"bounds"` or `"none"`.

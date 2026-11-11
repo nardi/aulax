@@ -229,9 +229,13 @@ def _solve(
     safeguarded_multipliers = solver.multiplier_update.safeguard_multipliers(
         multipliers, evaluation0
     )
-    penalty = solver.penalty_update.initial_penalty(evaluation0)
-    inner_tolerance = jnp.asarray(
-        solver.tolerance_schedule.initial_tolerance(), dtype=objective.dtype
+    penalty = solver.penalty_update_for_inner().initial_penalty(evaluation0)
+    inner_tolerance = jnp.maximum(
+        jnp.asarray(
+            solver.tolerance_schedule_for_inner().initial_tolerance(),
+            dtype=objective.dtype,
+        ),
+        solver.final_inner_tolerance(objective.dtype),
     )
 
     inner_function = _inner_function(problem)
@@ -277,12 +281,17 @@ def _solve(
         if stopping is None:
             stopping = (
                 GradientStopping()
-                if solver.inner_state_access.prefers_gradient_stopping(new_inner_state)
+                if solver.inner_state_access_for_inner().prefers_gradient_stopping(
+                    new_inner_state
+                )
                 else MinimiserStopping()
             )
         inner_converged = stopping.is_inner_converged(
             stationarity_measure(
-                new_y, solver.inner_state_access.accepted_gradient(new_inner_state)
+                new_y,
+                solver.inner_state_access_for_inner().accepted_gradient(
+                    new_inner_state
+                ),
             ),
             jnp.maximum(
                 loop.inner_tolerance,
@@ -334,7 +343,7 @@ def _solve(
         infeasibility = penalty_infeasibility(
             evaluation, loop.multipliers, loop.penalty
         )
-        new_penalty, penalty_stalled = solver.penalty_update.update_penalty(
+        new_penalty, penalty_stalled = solver.penalty_update_for_inner().update_penalty(
             loop.penalty, infeasibility, loop.previous_infeasibility
         )
         kkt = kkt_infeasibility(
@@ -362,14 +371,16 @@ def _solve(
                 * gradient_scale
             )
         converged = (
-            solver.is_final_tolerance(loop.inner_tolerance)
+            solver.is_final_tolerance(loop.inner_tolerance, objective.dtype)
             & (kkt <= feasibility_tolerance)
             & stationary
         )
         infeasible = penalty_stalled & jnp.invert(converged)
         new_tolerance = jnp.maximum(
-            solver.tolerance_schedule.update_tolerance(loop.inner_tolerance),
-            solver.final_inner_tolerance(),
+            solver.tolerance_schedule_for_inner().update_tolerance(
+                loop.inner_tolerance
+            ),
+            solver.final_inner_tolerance(objective.dtype),
         )
         new_inner_args = _InnerArgs(
             inner_user_args, evaluation.state, new_multipliers, new_penalty
@@ -377,7 +388,7 @@ def _solve(
         fresh_inner_state = eqx.combine(
             reinitialize_inner_state(loop.y, new_inner_args), static_inner_state
         )
-        transferred_inner_state = solver.inner_state_access.transfer_state(
+        transferred_inner_state = solver.inner_state_access_for_inner().transfer_state(
             eqx.combine(loop.inner_state, static_inner_state),
             fresh_inner_state,
             tree_max_norm(jax.tree.map(jnp.divide, new_penalty, loop.penalty)),
@@ -412,7 +423,7 @@ def _solve(
         """
         stagnant = tree_full_like(loop.previous_infeasibility, jnp.inf)
         decreased = tree_full_like(loop.previous_infeasibility, 0.0)
-        new_penalty, penalty_stalled = solver.penalty_update.update_penalty(
+        new_penalty, penalty_stalled = solver.penalty_update_for_inner().update_penalty(
             loop.penalty, stagnant, decreased
         )
         inner_args = _InnerArgs(
@@ -481,12 +492,16 @@ def _solve(
         evaluation, updates the multipliers from it, and discards that step.
         """
         stepped, new_inner_state = inner_step(loop)
-        accepted = solver.inner_state_access.accepted_evaluation(new_inner_state)
+        accepted = solver.inner_state_access_for_inner().accepted_evaluation(
+            new_inner_state
+        )
         if accepted is None:
             updated = outer_update(loop, stepped.evaluation, None)
             new_loop = tree_where(loop.update_pending, updated, stepped)
         else:
-            gradient = solver.inner_state_access.accepted_gradient(new_inner_state)
+            gradient = solver.inner_state_access_for_inner().accepted_gradient(
+                new_inner_state
+            )
             stepped = eqx.tree_at(lambda loop: loop.evaluation, stepped, accepted)
             updated = outer_update(stepped, accepted, gradient)
             if solver.verbose:

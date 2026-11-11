@@ -10,6 +10,7 @@ from ._inner import (
     InnerStoppingRule,
     OptimistixStateAccess,
 )
+from ._lbfgs import LBFGS
 from ._misc import dtype_default, tree_max_norm
 from ._newton import Newton
 from ._problem import Constraints
@@ -44,17 +45,36 @@ class AugmentedLagrangian(eqx.Module):
 
     The solve stops when $\lVert h \rVert_\infty$ and
     $\lVert \min(-g, \mu) \rVert_\infty$ are both below it. `None` selects
-    $10^{-8}$ in float64 for `Newton`, which is the tolerance of IPOPT, and
-    $10^{-6}$ in float64 for other minimisers. Float32 selects $10^{-3}$. The
-    violation at the end of a solve is about the final inner tolerance of `inner`,
-    so a bound much below that cannot be reached.
+    $10^{-8}$ in float64 for `Newton` and `LBFGS`, which is the tolerance of IPOPT,
+    and $10^{-6}$ in float64 for other minimisers. Float32 selects $10^{-5}$ for
+    `Newton` and `LBFGS`, and $10^{-3}$ for other minimisers. The violation at
+    the end of a solve is about the final inner tolerance of `inner`, so a bound
+    much below that cannot be reached.
     """
     multiplier_update: MultiplierUpdate = SafeguardedMultiplierUpdate()
     """The rule that updates the multipliers after each inner solve."""
-    penalty_update: PenaltyUpdate = AlgencanPenaltyUpdate()
-    """The rule that sets and grows the penalty."""
-    tolerance_schedule: ToleranceSchedule = GeometricToleranceSchedule()
-    """The rule that sets the tolerance of each inner solve."""
+    penalty_update: PenaltyUpdate | None = None
+    """The rule that sets and grows the penalty.
+
+    `None` selects `AlgencanPenaltyUpdate()` for `Newton` and other minimisers.
+    For `LBFGS` it selects an initial penalty of 10 and a growth factor of 100,
+    since a quasi-Newton minimiser needs a larger penalty to reach feasibility in
+    few outer iterations.
+    """
+    tolerance_schedule: ToleranceSchedule | None = None
+    """The rule that sets the tolerance of each inner solve.
+
+    `None` selects `GeometricToleranceSchedule()` for `Newton` and other
+    minimisers, and a start at $10^{-8}$ for `LBFGS`.
+    """
+    inner_tolerance_floor: float | None = None
+    r"""The smallest tolerance that an inner solve uses.
+
+    The `rtol` and `atol` of `inner` are raised to this value. `None` selects zero
+    in float64, so that the tolerances of `inner` apply, and $10^{-6}$ in float32,
+    where gradients carry rounding errors of about that size and a tighter
+    tolerance only adds steps.
+    """
     stationarity_tolerance: float | None = None
     r"""The bound on the gradient of the Lagrangian at the solution.
 
@@ -72,12 +92,15 @@ class AugmentedLagrangian(eqx.Module):
     the minimiser takes inexact steps, which is the case for the matrix-free mode of
     `Newton`.
     """
-    inner_state_access: InnerStateAccess = OptimistixStateAccess()
+    inner_state_access: InnerStateAccess | None = None
     """Reads the evaluation and gradient at the accepted point of the inner solver.
 
     With the evaluation, the multipliers update as soon as an inner solve ends.
     Without it, the solver takes one more inner step to learn the constraint
-    values at the inner solution.
+    values at the inner solution. `None` selects `OptimistixStateAccess()`, which
+    starts every inner solve without the Hessian approximation of the last one.
+    For `LBFGS` it selects `OptimistixStateAccess` with
+    `hessian_reuse="keep_unless_penalty_increased"`.
     """
     scaling: ProblemScaling | None = GradientScaling()
     """The rule that rescales the objective and constraints before the solve.
@@ -143,8 +166,39 @@ class AugmentedLagrangian(eqx.Module):
         """Return `feasibility_tolerance`, or its default for `inner` and `dtype`."""
         if self.feasibility_tolerance is not None:
             return self.feasibility_tolerance
-        newton_default = 1e-8 if isinstance(self.inner, Newton) else 1e-6
-        return dtype_default(dtype, newton_default, 1e-3)
+        if isinstance(self.inner, Newton | LBFGS):
+            return dtype_default(dtype, 1e-8, 1e-5)
+        return dtype_default(dtype, 1e-6, 1e-3)
+
+    def penalty_update_for_inner(self) -> PenaltyUpdate:
+        """Return `penalty_update`, or its default for `inner`."""
+        if self.penalty_update is not None:
+            return self.penalty_update
+        if isinstance(self.inner, LBFGS):
+            return AlgencanPenaltyUpdate(initial_value=10.0, growth_factor=100.0)
+        return AlgencanPenaltyUpdate()
+
+    def tolerance_schedule_for_inner(self) -> ToleranceSchedule:
+        """Return `tolerance_schedule`, or its default for `inner`."""
+        if self.tolerance_schedule is not None:
+            return self.tolerance_schedule
+        if isinstance(self.inner, LBFGS):
+            return GeometricToleranceSchedule(initial=1e-8)
+        return GeometricToleranceSchedule()
+
+    def inner_state_access_for_inner(self) -> InnerStateAccess:
+        """Return `inner_state_access`, or its default for `inner`."""
+        if self.inner_state_access is not None:
+            return self.inner_state_access
+        if isinstance(self.inner, LBFGS):
+            return OptimistixStateAccess(hessian_reuse="keep_unless_penalty_increased")
+        return OptimistixStateAccess()
+
+    def inner_tolerance_floor_for(self, dtype: DTypeLike) -> float:
+        """Return `inner_tolerance_floor`, or its default for `dtype`."""
+        if self.inner_tolerance_floor is not None:
+            return self.inner_tolerance_floor
+        return dtype_default(dtype, 0.0, 1e-6)
 
     def unbounded_threshold_for_inner(self) -> float:
         """Return `unbounded_threshold`, or its default for `inner`."""
@@ -164,9 +218,12 @@ class AugmentedLagrangian(eqx.Module):
             self.gradient_noise_factor * jnp.finfo(dtype).eps * tree_max_norm(penalty)
         )
 
-    def final_inner_tolerance(self) -> Scalar:
+    def final_inner_tolerance(self, dtype: DTypeLike) -> Scalar:
         """Return the tolerance at which the inner tolerance schedule ends."""
-        return jnp.minimum(self.inner.rtol, self.inner.atol)
+        return jnp.maximum(
+            jnp.minimum(self.inner.rtol, self.inner.atol),
+            self.inner_tolerance_floor_for(dtype),
+        )
 
     def inner_at_tolerance(self, tolerance: ArrayLike) -> optx.AbstractMinimiser:
         """Return `inner` with its `rtol` and `atol` loosened to `tolerance`."""
@@ -179,6 +236,8 @@ class AugmentedLagrangian(eqx.Module):
             ),
         )
 
-    def is_final_tolerance(self, tolerance: ArrayLike) -> Bool[ArrayLike, ""]:
+    def is_final_tolerance(
+        self, tolerance: ArrayLike, dtype: DTypeLike
+    ) -> Bool[ArrayLike, ""]:
         """Return whether `tolerance` has reached the end of the schedule."""
-        return tolerance <= self.final_inner_tolerance()
+        return tolerance <= self.final_inner_tolerance(dtype)

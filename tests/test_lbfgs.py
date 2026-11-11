@@ -266,10 +266,11 @@ def test_float32_state_dtypes():
             assert leaf.dtype == jnp.float32
 
 
-def augmented_lagrangian(**inner_options):
+def augmented_lagrangian(inner_state_access=None, **inner_options):
     """Return a solver with the settings that work for `alx.LBFGS` on small problems."""
     return alx.AugmentedLagrangian(
         inner=alx.LBFGS(rtol=1e-10, atol=1e-10, **inner_options),
+        inner_state_access=inner_state_access,
         inner_max_steps=4096,
         tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
         scaling=None,
@@ -282,10 +283,8 @@ def augmented_lagrangian(**inner_options):
     ["reset", "keep", "keep_unless_penalty_increased", "keep_scaled"],
 )
 def test_augmented_lagrangian_with_equality_constraint(hessian_reuse: str):
-    solver = eqx.tree_at(
-        lambda current: current.inner_state_access,
-        augmented_lagrangian(),
-        alx.OptimistixStateAccess(hessian_reuse=hessian_reuse),
+    solver = augmented_lagrangian(
+        inner_state_access=alx.OptimistixStateAccess(hessian_reuse=hessian_reuse)
     )
     solution = alx.minimise(hs28, solver, jnp.zeros(3))
     np.testing.assert_allclose(solution.value, [0.5, -0.5, 0.5], atol=1e-5)
