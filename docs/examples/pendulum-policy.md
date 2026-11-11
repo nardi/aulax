@@ -13,7 +13,6 @@ The pendulum has an angle $\theta$, measured from hanging straight down, and an 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import optimistix as optx
 
 import aulax as alx
 
@@ -38,12 +37,12 @@ def pendulum_step(theta, omega, torque):
 
 ## Optimal trajectories
 
-For one starting state, the swing-up with the least control effort is a standard trajectory optimization problem. The angles, angular velocities and torques at every time step are the variables, and the dynamics are equality constraints between neighbouring time steps. The starting state is passed as `args`.
+For one starting state, the swing-up with the least control effort is a standard trajectory optimization problem. The angles, angular velocities and torques at every time step are the variables, and the dynamics are equality constraints between neighbouring time steps. The starting state is passed as `args`. The torque limit $\lvert u \rvert \le 4$ is a box on the variables, so it is passed as `alx.Bounds` and not as a constraint. The bounds have the structure of `y`, with infinite entries for the angles and angular velocities.
 
 <!-- name: test_pendulum_policy -->
 ```python
 def swing_up(y, initial_state, state):
-    """Return the effort, the dynamics and boundary residuals, and the torque bounds."""
+    """Return the effort and the residuals of the dynamics and the boundary values."""
     theta, omega, torque = y["theta"], y["omega"], y["torque"]
     next_theta, next_omega = pendulum_step(theta[:-1], omega[:-1], torque)
     return alx.Evaluation(
@@ -55,7 +54,6 @@ def swing_up(y, initial_state, state):
             "start": jnp.array([theta[0], omega[0]]) - initial_state,
             "end": jnp.array([theta[-1] - jnp.pi, omega[-1]]),
         },
-        inequality=jnp.abs(torque) - MAXIMUM_TORQUE,
     )
 
 
@@ -71,6 +69,10 @@ def trajectory_guess(initial_state):
 trajectory_solver = alx.AugmentedLagrangian(
     penalty_update=alx.AlgencanPenaltyUpdate(per_constraint=True)
 )
+torque_bounds = alx.Bounds(
+    lower={"theta": -jnp.inf, "omega": -jnp.inf, "torque": -MAXIMUM_TORQUE},
+    upper={"theta": jnp.inf, "omega": jnp.inf, "torque": MAXIMUM_TORQUE},
+)
 
 
 @jax.jit
@@ -82,12 +84,13 @@ def optimal_trajectories(initial_state):
         trajectory_solver,
         trajectory_guess(initial_state),
         initial_state,
+        bounds=torque_bounds,
         max_steps=10_000,
     )
     return solution.value
 ```
 
-With a single penalty for all constraints, a few of these solves end at a point that is not feasible. A separate penalty for every constraint element, from `per_constraint=True`, lets the penalty grow only on the residuals that do not decrease, and then every solve succeeds.
+`alx.Newton` handles `torque_bounds` itself, so every torque is within the limit exactly and the limit is not a constraint of the augmented Lagrangian. With a single penalty for all constraints, 5 of the 64 solves for the training and test starting states do not succeed, and the worst of them ends with a constraint violation of 0.2. A separate penalty for every constraint element, from `per_constraint=True`, lets the penalty grow only on the residuals that do not decrease, and then every solve succeeds.
 
 The starting states are near the bottom, with a small positive angle and angular velocity. Starting states on both sides of the bottom would swing up in opposite directions, and a smooth network cannot switch between the two. We draw 32 starting states for training and 32 others for testing.
 
@@ -145,8 +148,10 @@ def imitation(weights, trajectories, state):
     return alx.Evaluation(objective=jnp.mean((predicted - trajectories["torque"]) ** 2))
 
 
-imitation_solver = alx.AugmentedLagrangian(inner=optx.LBFGS(rtol=1e-8, atol=1e-8))
-imitated = alx.minimise(imitation, imitation_solver, weights, references, max_steps=5_000)
+imitation_solver = alx.AugmentedLagrangian(inner=alx.LBFGS())
+imitated = alx.minimise(
+    imitation, imitation_solver, weights, references, max_steps=5_000
+)
 ```
 
 ## Training through the simulation
@@ -182,11 +187,7 @@ def policy_training(weights, initial_states, state):
 
 
 policy_solver = alx.AugmentedLagrangian(
-    inner=optx.LBFGS(rtol=1e-10, atol=1e-10),
-    inner_max_steps=4096,
-    tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
-    scaling=None,
-    penalty_update=alx.AlgencanPenaltyUpdate(initial_value=10.0),
+    inner=alx.LBFGS(), inner_max_steps=4096, scaling=None
 )
 trained = alx.minimise(
     policy_training,
@@ -198,7 +199,7 @@ trained = alx.minimise(
 )
 ```
 
-The network has 369 weights, so a dense Hessian would be affordable, but every Hessian evaluation differentiates twice through 32 simulations. `optx.LBFGS` only needs gradients. Its settings are the ones that worked best for L-BFGS on the benchmark problems, which are described in the [inner solvers](../guide/inner-solvers.md#other-minimisers) guide.
+The network has 369 weights, so a dense Hessian would be affordable, but every Hessian evaluation differentiates twice through 32 simulations. `alx.LBFGS` only needs gradients. The solver passes `inner_max_steps=4096`, which allows long inner solves, and `scaling=None`, which leaves the problem unscaled. The tolerance schedule and the penalty settings are the ones that `alx.AugmentedLagrangian` selects for `alx.LBFGS`, which are described in the [inner solvers](../guide/inner-solvers.md#l-bfgs) guide.
 
 A network can rarely end every trajectory exactly upright, so the training runs until `max_steps` and `throw=False` keeps the result. This is the usual way to end the training of a network, by a budget instead of a tolerance.
 
@@ -226,10 +227,10 @@ assert trained_cost_ratio < 1.05
 
 | policy | largest final error | cost ratio |
 |---|---|---|
-| imitated | 0.26 | 1.00 |
-| trained through the simulation | 0.025 | 1.00 |
+| imitated | 0.45 | 1.01 |
+| trained through the simulation | 0.011 | 1.00 |
 
-The imitated policy already uses the optimal effort on average, but its errors accumulate to a final error of 0.26. Training through the simulation reduces the final error tenfold, at the same effort.
+The imitated policy already uses about the optimal effort on average, but its errors accumulate to a final error of 0.45. Training through the simulation reduces the final error about forty-fold, at the same effort.
 
 ## Extensions
 
