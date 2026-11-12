@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, ClassVar
 
 import equinox as eqx
 import jax
@@ -32,11 +32,47 @@ class _Prepared:
         return 0
 
 
+def _projected_gradient(
+    point: Float[Array, " n"],
+    gradient: Float[Array, " n"],
+    lower: Float[Array, " n"],
+    upper: Float[Array, " n"],
+) -> Float[Array, " n"]:
+    """Return `point` minus the projection of `point - gradient` onto the box.
+
+    An element is the gradient element when `point - gradient` is inside the box.
+    Otherwise it is the difference between `point` and the bound that
+    `point - gradient` crosses, so it is zero at a variable on a bound that the
+    negative gradient points out of. This differs from `Bounds.projected_gradient`,
+    which does not shorten any element. The result is zero exactly at the points
+    that satisfy the first-order conditions of the problem with bounds.
+    """
+    return point - jnp.clip(point - gradient, lower, upper)
+
+
+def _free_variables(
+    point: Float[Array, " n"],
+    gradient: Float[Array, " n"],
+    lower: Float[Array, " n"],
+    upper: Float[Array, " n"],
+) -> Bool[Array, " n"]:
+    """Return which variables a step may change.
+
+    A variable is fixed when it is at a bound and the descent direction points out
+    of the box, and also when its lower and upper bound are equal.
+    """
+    pushed_out = ((point <= lower) & (gradient > 0)) | (
+        (point >= upper) & (gradient < 0)
+    )
+    return (lower < upper) & jnp.invert(pushed_out)
+
+
 class _NewtonInfo(eqx.Module):
     """The value and gradient at the accepted point.
 
     The field names match the ones of the optimistix quasi-Newton minimisers,
-    which is where `OptimistixStateAccess` looks for the gradient.
+    which is where `OptimistixStateAccess` looks for the gradient. With bounds, the
+    gradient is the one of the function itself and is not projected onto the box.
     """
 
     f: Scalar
@@ -86,6 +122,25 @@ class Newton(optx.AbstractMinimiser):
 
     The minimiser stops when the last trial step changed `y` and the function
     value by less than `rtol` and `atol` allow.
+
+    When `options["bounds"]` is an `alx.Bounds`, the minimiser is a projected Newton
+    method in the style of TRON, and every trial point is inside the box.
+    At the accepted point, a variable is fixed when it is at a bound and the
+    negative gradient points out of the box. All other variables are free. The
+    trust-region step is computed for the free variables only, from the Hessian with
+    the rows and columns of the fixed variables removed. The trial point is the
+    projection of the accepted point plus this step onto the box. If the projected
+    step is not a descent direction, the trial point is instead the projection of a
+    steepest descent step with the length of the trust radius. The predicted
+    decrease is computed from the projected step, so the acceptance test and the
+    radius updates are the same as without bounds. The test for rounding noise
+    compares the norms of the projected gradients.
+    """
+
+    supports_bounds: ClassVar[bool] = True
+    """Whether the minimiser reads `options["bounds"]`.
+
+    If so, every iterate `y` is inside the box.
     """
 
     rtol: float = 1e-8
@@ -116,6 +171,10 @@ class Newton(optx.AbstractMinimiser):
         """Return a state whose first step evaluates the function at `y`."""
         flat_y, _ = ravel_pytree(y)
         prepared = self.hessian.prepare(fn, y, args)
+        bounds = options.get("bounds")
+        if bounds is not None:
+            # The first trial point is the starting point projected onto the box.
+            y = bounds.clip(y)
         return _NewtonState(
             f_info=_NewtonInfo(
                 f=jnp.zeros((), f_struct.dtype), grad=jax.tree.map(jnp.zeros_like, y)
@@ -149,6 +208,11 @@ class Newton(optx.AbstractMinimiser):
         """
         prepared = state.prepared.value
         flat_eval, unravel = ravel_pytree(state.y_eval)
+        bounds = options.get("bounds")
+        if bounds is not None:
+            expanded = bounds.expand(y)
+            lower, _ = ravel_pytree(expanded.lower)
+            upper, _ = ravel_pytree(expanded.upper)
 
         def with_aux(flat: Array) -> tuple[Scalar, PyTree]:
             return fn(unravel(flat), args)
@@ -181,9 +245,14 @@ class Newton(optx.AbstractMinimiser):
         # then accepted, since otherwise the radius shrinks until the solve stalls.
         noise = 100.0 * jnp.finfo(f_eval.dtype).eps * jnp.maximum(1.0, jnp.abs(old.f))
         below_noise = (jnp.abs(predicted) < noise) & (jnp.abs(f_eval - old.f) < noise)
-        gradient_decreased = jnp.linalg.norm(gradient_eval) < jnp.linalg.norm(
-            old_gradient
-        )
+        if bounds is None:
+            gradient_decreased = jnp.linalg.norm(gradient_eval) < jnp.linalg.norm(
+                old_gradient
+            )
+        else:
+            gradient_decreased = jnp.linalg.norm(
+                _projected_gradient(flat_eval, gradient_eval, lower, upper)
+            ) < jnp.linalg.norm(_projected_gradient(flat_y, old_gradient, lower, upper))
         accept = state.first_step | (
             ((ratio > self.accept_ratio) | (below_noise & gradient_decreased)) & finite
         )
@@ -224,7 +293,27 @@ class Newton(optx.AbstractMinimiser):
         new_y = tree_where(accept, state.y_eval, y)
 
         flat_new_y, _ = ravel_pytree(new_y)
-        direction = prepared.step(scalar, hessian, ravel_pytree(f_info.grad)[0], radius)
+        gradient = ravel_pytree(f_info.grad)[0]
+        if bounds is None:
+            next_flat_y = flat_new_y + prepared.step(scalar, hessian, gradient, radius)
+        else:
+            free = _free_variables(flat_new_y, gradient, lower, upper)
+            # Rounding errors of the linear solve can leave a tiny nonzero entry at a
+            # fixed variable, which would move the variable off its bound.
+            direction = jnp.where(
+                free, prepared.step(scalar, hessian, gradient, radius, free), 0.0
+            )
+            projected_newton = jnp.clip(flat_new_y + direction, lower, upper)
+            # The projected Newton step can be an ascent direction. In that case
+            # the trial point is the projection of a steepest descent step.
+            free_gradient = jnp.where(free, gradient, 0.0)
+            gradient_norm = jnp.linalg.norm(free_gradient)
+            descent_length = radius / jnp.where(gradient_norm > 0, gradient_norm, 1.0)
+            projected_descent = jnp.clip(
+                flat_new_y - descent_length * free_gradient, lower, upper
+            )
+            is_descent = gradient @ (projected_newton - flat_new_y) < 0
+            next_flat_y = jnp.where(is_descent, projected_newton, projected_descent)
         y_scale = self.atol + self.rtol * jnp.abs(flat_eval)
         f_scale = self.atol + self.rtol * jnp.abs(f_eval)
         converged = (self.norm(trial_step / y_scale) < 1) & (
@@ -234,7 +323,7 @@ class Newton(optx.AbstractMinimiser):
             f_info=f_info,
             hessian=hessian,
             first_step=jnp.array(False),
-            y_eval=unravel(flat_new_y + direction),
+            y_eval=unravel(next_flat_y),
             aux=aux,
             radius=radius,
             terminate=converged & jnp.invert(state.first_step),

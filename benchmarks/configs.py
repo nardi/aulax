@@ -16,6 +16,7 @@ from jaxtyping import PyTree
 
 import aulax as alx
 
+from .bounds import split_bounds
 from .ipopt import import_cyipopt
 from .metrics import classify_outcome, constraint_violation, flat_leaves
 from .problems import BenchmarkProblem
@@ -118,6 +119,12 @@ class AulaxConfiguration:
     """The solver to run."""
     max_steps: int = 20_000
     """The step limit, high enough that it only stops solves that are stuck."""
+    native_bounds: bool = False
+    """Whether the bounds on variables go to the solver as `bounds`, not as rows.
+
+    With this set, `split_bounds` removes the bound residuals from the problem, and
+    `alx.minimise` receives them as an `alx.Bounds` box.
+    """
 
     def solve(self, problem: BenchmarkProblem, repeats: int) -> SolveRecord:
         """Solve `problem` and count the evaluations with a debug callback."""
@@ -134,9 +141,16 @@ class AulaxConfiguration:
             nonlocal evaluation_count
             evaluation_count += 1
 
+        solved_problem = problem.problem
+        bounds: alx.Bounds | None = None
+        if self.native_bounds:
+            bounds, solved_problem = split_bounds(
+                problem.problem, problem.y0, problem.args
+            )
+
         def counted_problem(y, args, state):
             jax.debug.callback(count_evaluation)
-            return problem.problem(y, args, state)
+            return solved_problem(y, args, state)
 
         @jax.jit
         def solve(y0, args):
@@ -147,6 +161,7 @@ class AulaxConfiguration:
                 args,
                 max_steps=self.max_steps,
                 throw=False,
+                bounds=bounds,
             )
 
         y0 = _as_jax(problem.y0)
@@ -836,6 +851,124 @@ _CONFIGURATION_LIST: list[Configuration] = [
             inner=optx.BFGS(rtol=1e-8, atol=1e-8),
             stationarity_tolerance=1e-4,
         ),
+    ),
+    AulaxConfiguration(
+        name="nonlinear_cg",
+        description="Nonlinear conjugate gradient inner solves with a line search.",
+        solver=alx.AugmentedLagrangian(inner=optx.NonlinearCG(rtol=1e-8, atol=1e-8)),
+    ),
+    AulaxConfiguration(
+        name="nonlinear_cg_gradient",
+        description="Nonlinear conjugate gradient with gradient stopping and a "
+        "stationarity check.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.NonlinearCG(rtol=1e-8, atol=1e-8),
+            inner_stopping=alx.GradientStopping(),
+            stationarity_tolerance=1e-4,
+        ),
+    ),
+    AulaxConfiguration(
+        name="dog",
+        description="DoG inner solves, a parameter-free step size schedule.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.contrib.dog(), rtol=1e-8, atol=1e-8),
+        ),
+    ),
+    AulaxConfiguration(
+        name="prodigy",
+        description="Prodigy inner solves, a parameter-free Adam variant.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.contrib.prodigy(), rtol=1e-8, atol=1e-8),
+        ),
+    ),
+    AulaxConfiguration(
+        name="dadapt_adamw",
+        description="D-Adaptation AdamW inner solves, a parameter-free Adam variant.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(
+                optax.contrib.dadapt_adamw(), rtol=1e-8, atol=1e-8
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lion_1e-3",
+        description="Lion inner solves with learning rate 1e-3.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(
+                optax.lion(learning_rate=1e-3), rtol=1e-8, atol=1e-8
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lion_1e-4",
+        description="Lion inner solves with learning rate 1e-4.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(
+                optax.lion(learning_rate=1e-4), rtol=1e-8, atol=1e-8
+            ),
+        ),
+    ),
+    AulaxConfiguration(
+        name="nonlinear_cg_tight_floor",
+        description="Nonlinear conjugate gradient with a tight tolerance schedule, "
+        "no gradient scaling and an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.NonlinearCG(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
+    AulaxConfiguration(
+        name="prodigy_tight_floor",
+        description="Prodigy with a tight tolerance schedule, no gradient scaling "
+        "and an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.OptaxMinimiser(optax.contrib.prodigy(), rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-6),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lbfgs_tight_floor",
+        description="L-BFGS with a tight tolerance schedule, no gradient scaling and "
+        "an initial penalty of one.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.LBFGS(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+        ),
+    ),
+    AulaxConfiguration(
+        name="lbfgs_tight_penalty_10",
+        description="L-BFGS with a tight tolerance schedule, no gradient scaling and "
+        "an initial penalty of ten.",
+        solver=alx.AugmentedLagrangian(
+            inner=optx.LBFGS(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=10.0),
+        ),
+    ),
+    AulaxConfiguration(
+        name="newton_bounds",
+        description="The default Newton solver, with the bounds on variables passed "
+        "natively.",
+        solver=alx.AugmentedLagrangian(inner=alx.Newton()),
+        native_bounds=True,
+    ),
+    AulaxConfiguration(
+        name="lbfgs_bounds",
+        description="The default L-BFGS solver, with the bounds on variables passed "
+        "natively.",
+        solver=alx.AugmentedLagrangian(inner=alx.LBFGS()),
+        native_bounds=True,
     ),
     ScipyConfiguration(
         name="scipy_slsqp",

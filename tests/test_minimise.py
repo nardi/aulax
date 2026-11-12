@@ -1,3 +1,5 @@
+import math
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -246,3 +248,57 @@ def test_penalty_stays_when_the_problem_is_feasible_to_well_below_the_tolerance(
     solution = alx.minimise(problem, solver, jnp.zeros(3))
     np.testing.assert_allclose(solution.value, [1 / 3] * 3, atol=1e-6)
     np.testing.assert_allclose(solution.stats.penalty.equality, 2.0)
+
+
+def test_unbounded_threshold_restarts_diverging_inner_solve():
+    """Check that the unbounded restart reaches a feasible point."""
+
+    def hs33(y, args, state):
+        return alx.Evaluation(
+            objective=(y[0] - 1.0) * (y[0] - 2.0) * (y[0] - 3.0) + y[2],
+            inequality=jnp.concatenate(
+                [
+                    jnp.array([y[0] ** 2 + y[1] ** 2 - y[2] ** 2, 4.0 - jnp.sum(y**2)]),
+                    -y,
+                    jnp.array([y[2] - 5.0]),
+                ]
+            ),
+        )
+
+    y0 = jnp.array([0.0, 0.0, 3.0])
+
+    def solver_with_threshold(threshold: float | None) -> alx.AugmentedLagrangian:
+        return alx.AugmentedLagrangian(
+            inner=optx.LBFGS(rtol=1e-10, atol=1e-10),
+            inner_max_steps=4096,
+            tolerance_schedule=alx.GeometricToleranceSchedule(initial=1e-8),
+            scaling=None,
+            penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
+            unbounded_threshold=threshold,
+        )
+
+    # The cubic objective falls faster than the quadratic penalty grows as
+    # `y[0]` decreases, so without the check the inner solve diverges.
+    plain = alx.minimise(
+        hs33, solver_with_threshold(math.inf), y0, max_steps=20_000, throw=False
+    )
+    assert plain.result != alx.RESULTS.successful
+
+    restarted = alx.minimise(
+        hs33, solver_with_threshold(1e20), y0, max_steps=20_000, throw=False
+    )
+    assert restarted.result == alx.RESULTS.successful
+    assert restarted.stats.infeasibility <= 1e-6
+    assert np.all(np.isfinite(restarted.value))
+
+
+def test_problem_without_constraints():
+    """Check that a problem with neither equality nor inequality residuals solves."""
+
+    def quadratic(y, args, state):
+        return alx.Evaluation(objective=jnp.sum((y - 1.0) ** 2))
+
+    for inner in (alx.Newton(), optx.LBFGS(rtol=1e-8, atol=1e-8)):
+        solver = alx.AugmentedLagrangian(inner=inner)
+        solution = alx.minimise(quadratic, solver, jnp.zeros(3))
+        assert jnp.allclose(solution.value, 1.0, atol=1e-6)

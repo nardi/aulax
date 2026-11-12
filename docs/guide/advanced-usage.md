@@ -55,7 +55,7 @@ Every problem in the batch runs until the slowest one finishes, since the batch 
 
 ### Precision
 
-Tests and examples on this site run in float64, which we enable with `jax.config.update("jax_enable_x64", True)`. In float32, a minimiser can only locate $y$ to about $3 \times 10^{-4}$ relative accuracy, and the default feasibility tolerance is $10^{-3}$ to match. The penalty cap and multiplier bounds also have lower float32 defaults, since large penalties and multipliers lose most of their significant digits there. A float32 solve looks like this:
+Tests and examples on this site run in float64, which we enable with `jax.config.update("jax_enable_x64", True)`. In float32, a minimiser can only locate $y$ to about $3 \times 10^{-4}$ relative accuracy, and the default feasibility tolerance is $10^{-3}$ to match. `alx.Newton` and `alx.LBFGS` use $10^{-5}$ instead. Every minimiser also has an inner tolerance floor of $10^{-6}$ in float32, which raises the `rtol` and `atol` of `inner` to that value when they are smaller. The penalty cap and multiplier bounds also have lower float32 defaults, since large penalties and multipliers lose most of their significant digits there. A float32 solve looks like this:
 
 <!-- name: test_advanced_usage -->
 ```python
@@ -70,34 +70,59 @@ assert jnp.allclose(solution.value, jnp.array([0.55, 0.45, 0.0]), atol=1e-3)
 
 ### Inner minimiser
 
-The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. Any optimistix minimiser can do the inner solves. `optx.BFGS` stores a dense Hessian approximation, which costs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `optx.LBFGS` keeps only a few recent gradient differences and is usually the better choice:
+The default inner minimiser is `alx.Newton`, and its modes are described on the [inner solvers](inner-solvers.md) page. The examples on this page use quasi-Newton minimisers instead, which need only first derivatives. `optx.BFGS` stores a dense Hessian approximation, which needs $n^2$ memory for $n$ variables and $n^2$ work per step. For more than a few hundred variables, `alx.LBFGS` stores only the last 20 pairs of a step and a gradient difference and is usually the better choice. For `alx.LBFGS`, `alx.AugmentedLagrangian` selects the penalty, the tolerance schedule and the feasibility tolerance, so no settings are needed here:
 
 <!-- name: test_advanced_usage -->
 ```python
-large_solver = alx.AugmentedLagrangian(inner=optx.LBFGS(rtol=1e-8, atol=1e-8))
+large_solver = alx.AugmentedLagrangian(inner=alx.LBFGS())
 point = jnp.linspace(-1.0, 1.0, 100)
-solution = alx.minimise(
-    simplex_projection, large_solver, jnp.full(100, 0.01), point, max_steps=4096
-)
+solution = alx.minimise(simplex_projection, large_solver, jnp.full(100, 0.01), point)
 assert jnp.allclose(jnp.sum(solution.value), 1.0, atol=1e-6)
 ```
 
-The inequality terms of the augmented Lagrangian have a kink in their second derivative, and quasi-Newton minimisers slow down when many constraints cross it during a solve. This 100-variable projection takes over a thousand inner steps, more than the default `max_steps` allows. That is far more than a method that handles bounds directly would need, and it is the main weakness of aulax on problems with many bound constraints.
-
-### Initial penalty
-
-The default initial penalty scales with the objective at `y0`. For the projection above, the objective is large while `y0` is feasible, and the formula starts with a penalty of about 340, which makes the first inner problems badly conditioned. A fixed initial penalty of 1 cuts the number of steps by a factor of four here:
+The inequality terms of the augmented Lagrangian have a kink in their second derivative, and quasi-Newton minimisers slow down when many constraints cross it during a solve. This 100-variable projection takes about 350 inner steps. The constraint $y \ge 0$ is a bound on the variables, and a minimiser that handles bounds does not need the inequality terms. Passing it as `bounds`, as the [bounds](bounds.md) page describes, takes about 200 steps, and every iterate is nonnegative:
 
 <!-- name: test_advanced_usage -->
 ```python
-default_steps = solution.stats.num_steps
+def simplex_equality(y, args, state):
+    return alx.Evaluation(objective=jnp.sum((y - args) ** 2), equality=jnp.sum(y) - 1.0)
+
+
+bounded = alx.minimise(
+    simplex_equality,
+    large_solver,
+    jnp.full(100, 0.01),
+    point,
+    bounds=alx.Bounds(lower=0.0),
+)
+assert bounded.stats.num_steps < solution.stats.num_steps
+assert jnp.all(bounded.value >= 0.0)
+assert jnp.allclose(bounded.value, solution.value, atol=1e-5)
+```
+
+Constraints that are not bounds still become inequality terms, and they still slow down the quasi-Newton minimisers.
+
+### Initial penalty
+
+`alx.AlgencanPenaltyUpdate()` chooses the initial penalty from the objective at `y0`. For the projection above, the objective is large while `y0` is feasible, and the formula starts with a penalty of about 340, which makes the first inner problems badly conditioned. A fixed initial penalty of 1 cuts the number of steps of `optx.BFGS` by a factor of six here:
+
+<!-- name: test_advanced_usage -->
+```python
+formula_solver = alx.AugmentedLagrangian(inner=optx.BFGS(rtol=1e-8, atol=1e-8))
 gentle_solver = alx.AugmentedLagrangian(
-    inner=optx.LBFGS(rtol=1e-8, atol=1e-8),
+    inner=optx.BFGS(rtol=1e-8, atol=1e-8),
     penalty_update=alx.AlgencanPenaltyUpdate(initial_value=1.0),
 )
-gentle = alx.minimise(simplex_projection, gentle_solver, jnp.full(100, 0.01), point)
-assert gentle.stats.num_steps < default_steps
+formula = alx.minimise(
+    simplex_projection, formula_solver, jnp.full(100, 0.01), point, max_steps=8192
+)
+gentle = alx.minimise(
+    simplex_projection, gentle_solver, jnp.full(100, 0.01), point, max_steps=8192
+)
+assert gentle.stats.num_steps < formula.stats.num_steps
 ```
+
+With `alx.LBFGS`, `penalty_update=None` already selects an initial penalty of 10 and a growth factor of 100. A `penalty_update` that is passed replaces both, so `AlgencanPenaltyUpdate(initial_value=1.0)` also sets the growth factor to 10 again. On this problem, `alx.LBFGS` does not need a different initial penalty.
 
 When constraints have very different scales, `AlgencanPenaltyUpdate(per_constraint=True)` gives each constraint element its own penalty, so a hard constraint does not raise the penalty on all the others. Scaling the residuals in the problem function, so that a violation of 1 means roughly the same thing for every constraint, helps just as much and costs nothing.
 
@@ -107,14 +132,14 @@ A sequence of nearby problems, like the steps of a model predictive controller, 
 
 <!-- name: test_advanced_usage -->
 ```python
-first = alx.minimise(simplex_projection, gentle_solver, jnp.full(100, 0.01), point)
+first = solution
 shifted_point = point + 0.01
 cold = alx.minimise(
-    simplex_projection, gentle_solver, jnp.full(100, 0.01), shifted_point
+    simplex_projection, large_solver, jnp.full(100, 0.01), shifted_point
 )
 warm = alx.minimise(
     simplex_projection,
-    gentle_solver,
+    large_solver,
     first.value,
     shifted_point,
     first.state,
@@ -124,13 +149,13 @@ assert jnp.allclose(warm.value, cold.value, atol=1e-5)
 assert warm.stats.num_steps < cold.stats.num_steps
 ```
 
-Here the warm start takes about a third of the steps of the cold one. The penalty always restarts from its initial value, so a warm start saves the most when the initial penalty is already about right.
+Here the warm start takes about a fifth of the steps of the cold one. The penalty always restarts from its initial value, so a warm start saves the most when the initial penalty is already about right.
 
 ## Differentiation
 
 ### Implicit derivatives
 
-The solution of a problem depends on its `args`, and on any arrays the problem function closes over. `jax.grad`, `jax.jacrev` and `jax.jacfwd` all work on `alx.minimise`, and by default they use the implicit function theorem on the KKT conditions at the solution. This costs one linear solve, whatever the number of steps the solve itself took, and it never stores the iterations.
+The solution of a problem depends on its `args`, and on any arrays the problem function closes over. `jax.grad`, `jax.jacrev` and `jax.jacfwd` all work on `alx.minimise`, and by default they use the implicit function theorem on the KKT conditions at the solution. This costs one linear solve, whatever the number of steps the solve itself took, and the solver does not store the iterations. The bounds of `alx.minimise` are part of the KKT conditions as well, and the [bounds](bounds.md#derivatives) page describes their derivatives.
 
 For the simplex projection, the Jacobian of the projection with respect to $p$ has a closed form. On the set $S$ of positive entries, the projection subtracts the mean excess, so its Jacobian there is $I - \frac{1}{\lvert S \rvert} \mathbf{1}\mathbf{1}^\top$, and it is zero elsewhere:
 

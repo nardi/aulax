@@ -34,8 +34,12 @@ nav = [
   { "User guide" = [
     { "Basic usage" = "guide/basic-usage.md" },
     { "Problem interface" = "guide/problem-interface.md" },
+    { "Bounds on the variables" = "guide/bounds.md" },
     { "Advanced usage" = "guide/advanced-usage.md" },
     { "Inner solvers" = "guide/inner-solvers.md" },
+  ] },
+  { "Examples" = [
+    { "Pendulum swing-up policy" = "examples/pendulum-policy.md" },
   ] },
   { "Theory" = "theory.md" },
   { "API reference" = "api/index.md" },

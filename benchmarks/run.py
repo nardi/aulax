@@ -6,12 +6,16 @@ which the S2MPJ problems need because their callbacks cannot be interrupted.
 """
 
 import argparse
+import dataclasses
 from pathlib import Path
 
 import jax
+import numpy as np
+from jaxtyping import PyTree
 
 from .configs import CONFIGURATIONS
 from .problem_sets import PROBLEM_SETS
+from .problems import BenchmarkProblem
 from .processes import ProcessOutcome, run_in_processes
 from .records import (
     RESULTS_DIRECTORY,
@@ -22,24 +26,60 @@ from .records import (
 )
 
 
+def cast_to_float32(tree: PyTree) -> PyTree:
+    """Return `tree` with every floating point leaf cast to `float32`.
+
+    Leaves with other dtypes, and `None`, are returned unchanged.
+    """
+
+    def cast_leaf(leaf):
+        """Return `leaf` as `float32` if it has a floating point dtype."""
+        if np.issubdtype(np.asarray(leaf).dtype, np.floating):
+            return np.asarray(leaf, dtype=np.float32)
+        return leaf
+
+    return jax.tree.map(cast_leaf, tree)
+
+
 def solve_problem(
-    problem_set: str, problem_name: str, configuration_name: str, repeats: int
+    problem_set: str,
+    problem_name: str,
+    configuration_name: str,
+    repeats: int,
+    float32: bool = False,
 ) -> SolveRecord:
     """Load one problem and solve it with one configuration.
 
-    This is the function each worker process runs, so it takes names rather
-    than objects, which a process started with `spawn` could not receive.
+    With `float32`, JAX runs with 64-bit floats off and the problem data is cast
+    to `float32`. This is the function each worker process runs, so it takes names
+    rather than objects, which a process started with `spawn` could not receive.
     """
-    jax.config.update("jax_enable_x64", True)
+    jax.config.update("jax_enable_x64", not float32)
     problem = PROBLEM_SETS[problem_set].load_problem(problem_name)
+    if float32:
+        problem = cast_problem_to_float32(problem)
     return CONFIGURATIONS[configuration_name].solve(problem, repeats)
+
+
+def cast_problem_to_float32(problem: BenchmarkProblem) -> BenchmarkProblem:
+    """Return `problem` with its starting point, arguments and solution in `float32`."""
+    return dataclasses.replace(
+        problem,
+        y0=cast_to_float32(problem.y0),
+        args=cast_to_float32(problem.args),
+        solution=cast_to_float32(problem.solution),
+    )
 
 
 def run_configuration(
     arguments: argparse.Namespace, names: list[str], configuration_name: str
 ) -> None:
     """Run one configuration on the named problems and save each record at once."""
-    path = arguments.output_dir / f"{arguments.problems}-{configuration_name}.json"
+    precision_suffix = "-f32" if arguments.float32 else ""
+    path = (
+        arguments.output_dir
+        / f"{arguments.problems}-{configuration_name}{precision_suffix}.json"
+    )
     records: list[SolveRecord] = []
     if arguments.resume and path.exists():
         records = read_result_file(path).records
@@ -59,7 +99,13 @@ def run_configuration(
         write_result_file(result_file, path)
 
     argument_tuples = [
-        (arguments.problems, name, configuration_name, arguments.repeats)
+        (
+            arguments.problems,
+            name,
+            configuration_name,
+            arguments.repeats,
+            arguments.float32,
+        )
         for name in remaining
     ]
     if arguments.workers > 0:
@@ -132,9 +178,14 @@ def main() -> None:
         action="store_true",
         help="Keep the records in an existing result file and run the rest.",
     )
+    parser.add_argument(
+        "--float32",
+        action="store_true",
+        help="Run in float32 with 64-bit floats off. Appends -f32 to the file name.",
+    )
     arguments = parser.parse_args()
 
-    jax.config.update("jax_enable_x64", True)
+    jax.config.update("jax_enable_x64", not arguments.float32)
     names = PROBLEM_SETS[arguments.problems].problem_names()
     if arguments.only:
         names = [name for name in names if name in arguments.only]

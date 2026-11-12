@@ -72,3 +72,13 @@ def test_result_file_round_trip(tmp_path):
     path = tmp_path / "result.json"
     write_result_file(result_file, path)
     assert read_result_file(path) == result_file
+
+
+def test_outcome_classification_in_single_precision():
+    assert classify_outcome(True, 5e-5, 1.0, 1.0, single_precision=True) == "solved"
+    assert classify_outcome(True, 5e-5, 1.0, 1.0, single_precision=False) == "failed"
+    assert classify_outcome(True, 0.0, 1.00005, 1.0, single_precision=True) == "solved"
+    assert (
+        classify_outcome(True, 0.0, 1.00005, 1.0, single_precision=False)
+        == "other_minimum"
+    )

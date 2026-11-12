@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .problems import BenchmarkProblem, hock_schittkowski, scaling
+from .problems.rescaled import rescaled
 
 
 class ProblemSet(Protocol):
@@ -68,6 +69,9 @@ class S2mpjProblemSet:
 PROBLEM_SETS: dict[str, ProblemSet] = {
     "hock_schittkowski": ListedProblemSet(lambda: hock_schittkowski.PROBLEMS),
     "scaling": ListedProblemSet(lambda: scaling.PROBLEMS),
+    "rescaled": ListedProblemSet(
+        lambda: [rescaled(problem) for problem in hock_schittkowski.PROBLEMS]
+    ),
     "s2mpj": S2mpjProblemSet("general"),
     "s2mpj_bounds": S2mpjProblemSet("bounds"),
     "s2mpj_irregular": S2mpjProblemSet("irregular"),

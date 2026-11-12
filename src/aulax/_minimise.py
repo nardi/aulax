@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 from typing import Any, Generic
 
@@ -6,8 +7,10 @@ import jax
 import jax.numpy as jnp
 import lineax as lx
 import optimistix as optx
+from jax.core import Tracer
 from jaxtyping import Array, Bool, Int, PyTree, Scalar
 
+from ._bounds import BoundedProblem, Bounds
 from ._inner import GradientStopping, MinimiserStopping
 from ._lagrangian import (
     augmented_lagrangian,
@@ -59,6 +62,8 @@ class _LoopState(eqx.Module):
 
     y: PyTree[Array]
     """The current point of the inner solve."""
+    inner_start_y: PyTree[Array]
+    """The point at which the current inner solve started."""
     inner_state: PyTree[Array]
     """The array part of the inner solver state."""
     evaluation: Evaluation
@@ -123,23 +128,40 @@ class _SolveOutputs(eqx.Module):
     """The evaluation at the solution, with its state and aux output."""
     active: PyTree[Bool[Array, "..."]]
     """Which inequality constraints are active at the solution."""
+    bound_active: Bounds | None
+    """Which bounds are active at the solution, or `None` if the inner minimiser
+    does not handle bounds."""
     result: RESULTS
     """The outcome of the solve."""
     stats: Statistics
     """Statistics about the solve."""
 
 
-def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutputs]:
+def _solve(
+    inputs: tuple,
+) -> tuple[tuple[PyTree[Array], Constraints, Bounds | None], _SolveOutputs]:
     """Run the solver loop and return the minimizer and multipliers.
 
     `inputs` holds the problem, the solver, `y0`, `args`, the initial state and
-    multipliers, the inner solver options, the step limit and the while loop to
-    run. It is a single tuple so that an optimistix adjoint can differentiate
-    through it.
+    multipliers, the bounds, the inner solver options, the step limit and the
+    while loop to run. It is a single tuple so that an optimistix adjoint can
+    differentiate through it. `bounds` is expanded to the shape of `y0` and is only
+    set when the inner minimiser handles the bounds. Every iterate of that
+    minimiser is inside the box. The third element of the result is the `Bounds`
+    of reduced costs in that case, and `None` otherwise.
     """
-    problem, solver, y0, args, state, multipliers, options, max_steps, while_loop = (
-        inputs
-    )
+    (
+        problem,
+        solver,
+        y0,
+        args,
+        state,
+        multipliers,
+        bounds,
+        options,
+        max_steps,
+        while_loop,
+    ) = inputs
     tags = frozenset()
 
     def objective_with_evaluation(y: Y) -> tuple[Scalar, Evaluation]:
@@ -188,6 +210,14 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     elif scaling is not None:
         multipliers = scaling.scale_multipliers(multipliers)
 
+    def stationarity_measure(
+        y: Y, gradient: PyTree[Array] | None
+    ) -> PyTree[Array] | None:
+        """Return `gradient`, set to zero where `-gradient` points out of the box."""
+        if gradient is None or bounds is None:
+            return gradient
+        return bounds.projected_gradient(y, gradient)
+
     def user_evaluation(evaluation: Evaluation) -> Evaluation:
         """Return `evaluation` in the units of the original problem."""
         return evaluation if scaling is None else scaling.unscale_evaluation(evaluation)
@@ -199,9 +229,13 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     safeguarded_multipliers = solver.multiplier_update.safeguard_multipliers(
         multipliers, evaluation0
     )
-    penalty = solver.penalty_update.initial_penalty(evaluation0)
-    inner_tolerance = jnp.asarray(
-        solver.tolerance_schedule.initial_tolerance(), dtype=objective.dtype
+    penalty = solver.penalty_update_for_inner().initial_penalty(evaluation0)
+    inner_tolerance = jnp.maximum(
+        jnp.asarray(
+            solver.tolerance_schedule_for_inner().initial_tolerance(),
+            dtype=objective.dtype,
+        ),
+        solver.final_inner_tolerance(objective.dtype),
     )
 
     inner_function = _inner_function(problem)
@@ -247,11 +281,18 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         if stopping is None:
             stopping = (
                 GradientStopping()
-                if solver.inner_state_access.prefers_gradient_stopping(new_inner_state)
+                if solver.inner_state_access_for_inner().prefers_gradient_stopping(
+                    new_inner_state
+                )
                 else MinimiserStopping()
             )
         inner_converged = stopping.is_inner_converged(
-            solver.inner_state_access.accepted_gradient(new_inner_state),
+            stationarity_measure(
+                new_y,
+                solver.inner_state_access_for_inner().accepted_gradient(
+                    new_inner_state
+                ),
+            ),
             jnp.maximum(
                 loop.inner_tolerance,
                 solver.gradient_noise_floor(loop.penalty, objective.dtype),
@@ -293,7 +334,9 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         `evaluation` belongs to `loop.y`, the inner solution. `gradient` is the
         gradient of the augmented Lagrangian there, if the inner solver provides
         it. It equals the gradient of the Lagrangian with the new multiplier
-        estimates, so its size measures stationarity.
+        estimates, so its size measures stationarity. With bounds, an element at a
+        variable on a bound is replaced by zero when the negative gradient points
+        out of the box.
         """
         estimates = solver.multiplier_update.update_multipliers(
             loop.multipliers, loop.penalty, evaluation
@@ -301,7 +344,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         infeasibility = penalty_infeasibility(
             evaluation, loop.multipliers, loop.penalty
         )
-        new_penalty, penalty_stalled = solver.penalty_update.update_penalty(
+        new_penalty, penalty_stalled = solver.penalty_update_for_inner().update_penalty(
             loop.penalty, infeasibility, loop.previous_infeasibility
         )
         kkt = kkt_infeasibility(
@@ -321,7 +364,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             stationary = jnp.array(True)
         else:
             stationary = (
-                tree_max_norm(gradient)
+                tree_max_norm(stationarity_measure(loop.y, gradient))
                 <= jnp.maximum(
                     solver.stationarity_tolerance_for_inner(),
                     solver.gradient_noise_floor(loop.penalty, objective.dtype),
@@ -329,14 +372,16 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
                 * gradient_scale
             )
         converged = (
-            solver.is_final_tolerance(loop.inner_tolerance)
+            solver.is_final_tolerance(loop.inner_tolerance, objective.dtype)
             & (kkt <= feasibility_tolerance)
             & stationary
         )
         infeasible = penalty_stalled & jnp.invert(converged)
         new_tolerance = jnp.maximum(
-            solver.tolerance_schedule.update_tolerance(loop.inner_tolerance),
-            solver.final_inner_tolerance(),
+            solver.tolerance_schedule_for_inner().update_tolerance(
+                loop.inner_tolerance
+            ),
+            solver.final_inner_tolerance(objective.dtype),
         )
         new_inner_args = _InnerArgs(
             inner_user_args, evaluation.state, new_multipliers, new_penalty
@@ -344,7 +389,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         fresh_inner_state = eqx.combine(
             reinitialize_inner_state(loop.y, new_inner_args), static_inner_state
         )
-        transferred_inner_state = solver.inner_state_access.transfer_state(
+        transferred_inner_state = solver.inner_state_access_for_inner().transfer_state(
             eqx.combine(loop.inner_state, static_inner_state),
             fresh_inner_state,
             tree_max_norm(jax.tree.map(jnp.divide, new_penalty, loop.penalty)),
@@ -354,6 +399,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         )
         return _LoopState(
             y=loop.y,
+            inner_start_y=loop.y,
             inner_state=new_dynamic_inner_state,
             evaluation=evaluation,
             multipliers=new_multipliers,
@@ -369,6 +415,43 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             result=RESULTS.where(infeasible, RESULTS.infeasible, loop.result),
         )
 
+    def restart_inner_solve(loop: _LoopState) -> _LoopState:
+        """Return `loop` with the inner solve reset to its start and a larger penalty.
+
+        The penalty update is called with an infeasibility that has not decreased,
+        so it grows the penalty as it would after a failed inner solve. When the
+        penalty is already at its maximum, the solve ends as infeasible.
+        """
+        stagnant = tree_full_like(loop.previous_infeasibility, jnp.inf)
+        decreased = tree_full_like(loop.previous_infeasibility, 0.0)
+        new_penalty, penalty_stalled = solver.penalty_update_for_inner().update_penalty(
+            loop.penalty, stagnant, decreased
+        )
+        inner_args = _InnerArgs(
+            inner_user_args, loop.evaluation.state, loop.multipliers, new_penalty
+        )
+        return eqx.tree_at(
+            lambda loop: (
+                loop.y,
+                loop.inner_state,
+                loop.penalty,
+                loop.inner_steps,
+                loop.update_pending,
+                loop.terminate,
+                loop.result,
+            ),
+            loop,
+            (
+                loop.inner_start_y,
+                reinitialize_inner_state(loop.inner_start_y, inner_args),
+                new_penalty,
+                jnp.array(0),
+                jnp.array(False),
+                penalty_stalled,
+                RESULTS.where(penalty_stalled, RESULTS.infeasible, loop.result),
+            ),
+        )
+
     def print_outer_update(
         stepped: _LoopState,
         updated: _LoopState,
@@ -377,7 +460,9 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
     ) -> None:
         """Print one line about the outer update, if the inner solve has ended."""
         stationarity = (
-            jnp.asarray(jnp.nan) if gradient is None else tree_max_norm(gradient)
+            jnp.asarray(jnp.nan)
+            if gradient is None
+            else tree_max_norm(stationarity_measure(updated.y, gradient))
         )
 
         def print_line() -> None:
@@ -408,17 +493,29 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         evaluation, updates the multipliers from it, and discards that step.
         """
         stepped, new_inner_state = inner_step(loop)
-        accepted = solver.inner_state_access.accepted_evaluation(new_inner_state)
+        accepted = solver.inner_state_access_for_inner().accepted_evaluation(
+            new_inner_state
+        )
         if accepted is None:
             updated = outer_update(loop, stepped.evaluation, None)
             new_loop = tree_where(loop.update_pending, updated, stepped)
         else:
-            gradient = solver.inner_state_access.accepted_gradient(new_inner_state)
+            gradient = solver.inner_state_access_for_inner().accepted_gradient(
+                new_inner_state
+            )
             stepped = eqx.tree_at(lambda loop: loop.evaluation, stepped, accepted)
             updated = outer_update(stepped, accepted, gradient)
             if solver.verbose:
                 print_outer_update(stepped, updated, accepted, gradient)
             new_loop = tree_where(stepped.update_pending, updated, stepped)
+        unbounded_threshold = solver.unbounded_threshold_for_inner()
+        if unbounded_threshold < math.inf:
+            checked = stepped.evaluation if accepted is None else accepted
+            value = augmented_lagrangian(checked, loop.multipliers, loop.penalty)
+            unbounded = (value < -unbounded_threshold) | jnp.invert(
+                _tree_all_finite(new_loop.y)
+            )
+            new_loop = tree_where(unbounded, restart_inner_solve(loop), new_loop)
         return eqx.tree_at(lambda loop: loop.num_steps, new_loop, loop.num_steps + 1)
 
     def keep_going(loop: _LoopState) -> Bool[Array, ""]:
@@ -431,6 +528,7 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
 
     loop0 = _LoopState(
         y=y0,
+        inner_start_y=y0,
         inner_state=dynamic_inner_state0,
         evaluation=evaluation0,
         multipliers=safeguarded_multipliers,
@@ -461,16 +559,24 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
         evaluation = raw_problem(y, args, jax.lax.stop_gradient(loop.evaluation.state))
         return lagrangian(evaluation, final_multipliers)
 
-    stationarity = tree_max_norm(jax.grad(solution_lagrangian)(loop.y))
+    solution_gradient = jax.grad(solution_lagrangian)(loop.y)
+    stationarity = tree_max_norm(stationarity_measure(loop.y, solution_gradient))
     # An inequality constraint counts as active when its multiplier is positive.
     # A constraint that holds with equality but has a zero multiplier is treated
     # as inactive, which is one of the valid derivatives at such a point.
     active = jax.tree.map(
         lambda multiplier: multiplier > 0.0, final_multipliers.inequality
     )
+    if bounds is None:
+        bound_multipliers = None
+        bound_active = None
+    else:
+        bound_multipliers = bounds.reduced_costs(loop.y, solution_gradient)
+        bound_active = jax.tree.map(lambda reduced: reduced > 0.0, bound_multipliers)
     outputs = _SolveOutputs(
         evaluation=final_evaluation,
         active=active,
+        bound_active=bound_active,
         result=result,
         stats=Statistics(
             num_steps=loop.num_steps,
@@ -480,12 +586,14 @@ def _solve(inputs: tuple) -> tuple[tuple[PyTree[Array], Constraints], _SolveOutp
             stationarity=stationarity,
         ),
     )
-    return (loop.y, final_multipliers), outputs
+    return (loop.y, final_multipliers, bound_multipliers), outputs
 
 
 def _kkt_residual(
-    root: tuple[PyTree[Array], Constraints], outputs: _SolveOutputs, inputs: tuple
-) -> tuple[PyTree[Array], Constraints]:
+    root: tuple[PyTree[Array], Constraints, Bounds | None],
+    outputs: _SolveOutputs,
+    inputs: tuple,
+) -> tuple[PyTree[Array], Constraints, Bounds | None]:
     r"""Return the KKT residual whose root is the solution, for implicit derivatives.
 
     The residual is $\nabla_y L$, then $h$, then $g_j$ for an active inequality
@@ -493,9 +601,16 @@ def _kkt_residual(
     the residual keeps its shape whichever constraints are active. The gradient
     only includes the multipliers of active constraints, which makes the Jacobian
     with respect to `root` symmetric.
+
+    Bounds that the inner minimiser handles are treated like inequalities
+    $l - y \le 0$ and $y - u \le 0$ with the reduced costs as their multipliers.
+    The gradient then also has the terms $-\nu_l + \nu_u$, and an active bound
+    adds the residual $l - y$ or $y - u$ and an inactive one adds $-\nu$, so that
+    the Jacobian is symmetric. Here $\nu_l$ and $\nu_u$ are the reduced costs of
+    the lower and upper bounds and $\nu$ is the one of the bound in that row.
     """
-    y, multipliers = root
-    problem, _, _, args, *_ = inputs
+    y, multipliers, bound_multipliers = root
+    problem, _, _, args, _, _, bounds, *_ = inputs
     state = jax.lax.stop_gradient(outputs.evaluation.state)
     active_multipliers = Constraints(
         equality=multipliers.equality,
@@ -517,10 +632,68 @@ def _kkt_residual(
         multipliers.inequality,
         outputs.active,
     )
-    return gradient, Constraints(evaluation.equality, inequality_residual)
+    constraint_residual = Constraints(evaluation.equality, inequality_residual)
+    if bounds is None:
+        return gradient, constraint_residual, None
+    active_bounds = outputs.bound_active
+    assert bound_multipliers is not None and active_bounds is not None
+    # A multiplier of an inactive bound is zero in the gradient, as it is for the
+    # inequality constraints.
+    lower_multipliers = jax.tree.map(
+        lambda multiplier, active: jnp.where(active, multiplier, 0.0),
+        bound_multipliers.lower,
+        active_bounds.lower,
+    )
+    upper_multipliers = jax.tree.map(
+        lambda multiplier, active: jnp.where(active, multiplier, 0.0),
+        bound_multipliers.upper,
+        active_bounds.upper,
+    )
+    gradient = jax.tree.map(
+        lambda leaf, lower, upper: leaf - lower + upper,
+        gradient,
+        lower_multipliers,
+        upper_multipliers,
+    )
+    bound_residual = Bounds(
+        lower=jax.tree.map(
+            lambda y, lower, multiplier, active: jnp.where(
+                active, lower - y, -multiplier
+            ),
+            y,
+            bounds.lower,
+            bound_multipliers.lower,
+            active_bounds.lower,
+        ),
+        upper=jax.tree.map(
+            lambda y, upper, multiplier, active: jnp.where(
+                active, y - upper, -multiplier
+            ),
+            y,
+            bounds.upper,
+            bound_multipliers.upper,
+            active_bounds.upper,
+        ),
+    )
+    return gradient, constraint_residual, bound_residual
 
 
-@eqx.filter_jit
+def _bounds_are_traced(bounds: Bounds) -> bool:
+    """Return whether any bound is an abstract value of a transformation."""
+    return any(isinstance(leaf, Tracer) for leaf in jax.tree.leaves(bounds))
+
+
+def _concrete_bounds_are_ordered(bounds: Bounds) -> bool:
+    """Return whether every lower bound is at most the matching upper bound.
+
+    The bounds must not be traced. Under `jax.jit`, concrete bounds that the
+    function closes over would turn the comparison into a traced value, so the
+    comparison is evaluated at trace time.
+    """
+    with jax.ensure_compile_time_eval():
+        return bool(bounds.is_ordered())
+
+
 def minimise(
     problem: ProblemFunction[Y, Args, State, Aux],
     solver: AugmentedLagrangian,
@@ -531,6 +704,7 @@ def minimise(
     state: State = None,  # ty: ignore[invalid-parameter-default]
     *,
     multipliers: Constraints | None = None,
+    bounds: Bounds | None = None,
     options: dict[str, Any] | None = None,
     max_steps: int = 1024,
     adjoint: optx.AbstractAdjoint = optx.ImplicitAdjoint(),
@@ -543,13 +717,22 @@ def minimise(
             returns an `Evaluation` with the objective, the constraint residuals,
             the next state and any aux output.
         solver: The solver, usually an `AugmentedLagrangian`.
-        y0: The initial point, any pytree of arrays.
+        y0: The initial point, any pytree of arrays. It is moved into the box
+            of `bounds` if it is outside.
         args: Passed as the `args` of every call to `problem`.
         state: The state for the first call to `problem`. Later calls receive the
             `state` returned by the previous evaluation.
         multipliers: Initial multipliers, shaped like the constraints. `None`
             starts from zero.
-        options: Runtime options passed to the inner solver.
+        bounds: A box on `y`, or `None` for no bounds. A minimiser of the solver
+            whose class has `supports_bounds` set receives the expanded bounds
+            as `options["bounds"]`, and every iterate of that minimiser is
+            inside the box. The bounds are then not part of the augmented
+            Lagrangian. For any other minimiser, every finite bound is added to
+            the inequality constraints, and the multipliers of those rows are
+            returned as `bound_multipliers`.
+        options: Runtime options passed to the inner solver. They must not have
+            the key `"bounds"`, which `bounds` sets.
         max_steps: The maximum number of inner steps, summed over all inner
             solves.
         adjoint: How to differentiate the solution. `optimistix.ImplicitAdjoint`
@@ -561,12 +744,94 @@ def minimise(
 
     Returns:
         A `Solution` with the minimizer, the multipliers and the final state.
-        Derivatives flow through `value` and `multipliers` only.
+        Derivatives flow through `value`, `multipliers` and `bound_multipliers`
+        only.
+
+    Raises:
+        ValueError: If a lower bound is above the matching upper bound, which can
+            only be checked here when the bounds are not traced by `jax.jit` or
+            `jax.vmap`. Traced bounds are checked during the solve instead.
     """
+    if (
+        bounds is not None
+        and not _bounds_are_traced(bounds)
+        and not _concrete_bounds_are_ordered(bounds)
+    ):
+        raise ValueError(_BOUNDS_ORDER_MESSAGE)
+    return _minimise(
+        problem,
+        solver,
+        y0,
+        args,
+        state,
+        multipliers=multipliers,
+        bounds=bounds,
+        options=options,
+        max_steps=max_steps,
+        adjoint=adjoint,
+        throw=throw,
+    )
+
+
+_BOUNDS_ORDER_MESSAGE = (
+    "Every lower bound must be at most the matching upper bound, and no bound "
+    "may be NaN."
+)
+
+
+@eqx.filter_jit
+def _minimise(
+    problem: ProblemFunction[Y, Args, State, Aux],
+    solver: AugmentedLagrangian,
+    y0: Y,
+    args: Args,
+    state: State,
+    *,
+    multipliers: Constraints | None,
+    bounds: Bounds | None,
+    options: dict[str, Any] | None,
+    max_steps: int,
+    adjoint: optx.AbstractAdjoint,
+    throw: bool,
+) -> Solution[Y, State, Aux]:
+    """Compile and run `minimise`."""
     y0 = jax.tree.map(_as_inexact_array, y0)
     args = jax.tree.map(_python_float_as_array, args)
     state = jax.tree.map(_python_float_as_array, state)
     options = {} if options is None else options
+    # A box without bounds in either field is the same problem as no box.
+    if bounds is not None and bounds.lower is None and bounds.upper is None:
+        bounds = None
+    # The inner minimiser receives the bounds in `options` when its class sets
+    # `supports_bounds`. Otherwise the finite bounds become inequality constraints.
+    native_bounds = None
+    bounded_problem = None
+    if bounds is not None:
+        if "bounds" in options:
+            raise ValueError(
+                "`options` must not have the key `bounds`. Pass `bounds` to "
+                "`minimise` instead."
+            )
+        expanded_bounds = bounds.expand(y0)
+        y0 = eqx.error_if(
+            y0, jnp.invert(expanded_bounds.is_ordered()), _BOUNDS_ORDER_MESSAGE
+        )
+        y0 = expanded_bounds.clip(y0)
+        if getattr(solver.inner, "supports_bounds", False):
+            native_bounds = expanded_bounds
+            options = {**options, "bounds": expanded_bounds}
+        else:
+            # A field that the user left out of `bounds` has no rows.
+            bounded_problem = BoundedProblem(
+                problem,
+                Bounds(
+                    lower=None if bounds.lower is None else expanded_bounds.lower,
+                    upper=None if bounds.upper is None else expanded_bounds.upper,
+                ),
+            )
+            problem = bounded_problem
+            if multipliers is not None:
+                multipliers = bounded_problem.add_zero_rows(multipliers, y0)
     # Closure conversion turns arrays that `problem` closes over into leaves of a
     # pytree, so derivatives with respect to them reach the adjoint.
     problem = eqx.filter_closure_convert(problem, y0, args, state)
@@ -576,19 +841,37 @@ def minimise(
     ):
         raise ValueError("The objective must be a floating-point scalar.")
 
-    inputs = (problem, solver, y0, args, state, multipliers, options, max_steps)
+    inputs = (
+        problem,
+        solver,
+        y0,
+        args,
+        state,
+        multipliers,
+        native_bounds,
+        options,
+        max_steps,
+    )
     # The KKT residual has a symmetric Jacobian, see `_kkt_residual`.
     tags = frozenset({lx.symmetric_tag})
-    (value, solution_multipliers), outputs = adjoint.apply(
+    (value, solution_multipliers, bound_multipliers), outputs = adjoint.apply(
         _solve, _kkt_residual, inputs, tags
     )
+    stats = outputs.stats
+    if bounded_problem is not None:
+        solution_multipliers, bound_multipliers = bounded_problem.split_rows(
+            solution_multipliers, value
+        )
+        user_penalty, _ = bounded_problem.split_rows(stats.penalty, value)
+        stats = eqx.tree_at(lambda stats: stats.penalty, stats, user_penalty)
     solution = Solution(
         value=value,
         result=outputs.result,
         multipliers=solution_multipliers,
         state=outputs.evaluation.state,
         aux=outputs.evaluation.aux,
-        stats=outputs.stats,
+        stats=stats,
+        bound_multipliers=bound_multipliers,
     )
     if throw:
         solution = outputs.result.error_if(

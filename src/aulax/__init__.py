@@ -5,6 +5,7 @@ The conventional import style is `import aulax as alx`.
 
 import importlib.metadata
 
+from ._bounds import Bounds as Bounds
 from ._hessian import (
     AutoHessian as AutoHessian,
     DenseHessian as DenseHessian,
@@ -23,6 +24,7 @@ from ._inner import (
     MinimiserStopping as MinimiserStopping,
     OptimistixStateAccess as OptimistixStateAccess,
 )
+from ._lbfgs import LBFGS as LBFGS
 from ._minimise import minimise as minimise
 from ._newton import Newton as Newton
 from ._problem import (
