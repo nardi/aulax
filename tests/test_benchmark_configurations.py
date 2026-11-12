@@ -1,17 +1,19 @@
 """Tests for the benchmark configurations that pass the bounds to the solver."""
 
+from importlib.util import find_spec
+
 import pytest
 
 import aulax as alx
 
 
-requires_native_lbfgs = pytest.mark.skipif(
-    not hasattr(alx, "LBFGS"),
-    reason="`aulax` has no `LBFGS` minimiser yet, so `benchmarks.configs` cannot load.",
+requires_optax = pytest.mark.skipif(
+    find_spec("optax") is None,
+    reason="`benchmarks.configs` imports `optax` from the `bench` dependency group.",
 )
 
 
-@requires_native_lbfgs
+@requires_optax
 @pytest.mark.parametrize("name", ["newton_bounds", "lbfgs_bounds"])
 def test_native_bounds_configuration_is_registered(name: str):
     from benchmarks.configs import CONFIGURATIONS, AulaxConfiguration
@@ -22,7 +24,7 @@ def test_native_bounds_configuration_is_registered(name: str):
     assert configuration.native_bounds
 
 
-@requires_native_lbfgs
+@requires_optax
 @pytest.mark.parametrize("name", ["newton_bounds", "lbfgs_bounds"])
 def test_native_bounds_configuration_has_a_one_sentence_description(name: str):
     from benchmarks.configs import CONFIGURATIONS
@@ -32,7 +34,7 @@ def test_native_bounds_configuration_has_a_one_sentence_description(name: str):
     assert description.count(".") == 1
 
 
-@requires_native_lbfgs
+@requires_optax
 def test_newton_bounds_uses_the_default_newton_minimiser():
     from benchmarks.configs import CONFIGURATIONS, AulaxConfiguration
 
@@ -42,7 +44,7 @@ def test_newton_bounds_uses_the_default_newton_minimiser():
     assert configuration.solver.scaling == alx.AugmentedLagrangian().scaling
 
 
-@requires_native_lbfgs
+@requires_optax
 def test_lbfgs_bounds_uses_the_default_lbfgs_minimiser():
     from benchmarks.configs import CONFIGURATIONS, AulaxConfiguration
 
@@ -52,7 +54,7 @@ def test_lbfgs_bounds_uses_the_default_lbfgs_minimiser():
     assert configuration.solver.scaling == alx.AugmentedLagrangian().scaling
 
 
-@requires_native_lbfgs
+@requires_optax
 @pytest.mark.parametrize("name", ["baseline", "newton", "scipy_slsqp", "ipopt"])
 def test_existing_configurations_do_not_pass_bounds_natively(name: str):
     from benchmarks.configs import CONFIGURATIONS, AulaxConfiguration
